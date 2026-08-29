@@ -4,6 +4,7 @@
 
 ```text
 Ch05Arrays.java          병렬 배열 기반 V1
+Ch06Methods.java         길어진 main 메서드를 기능별 메서드로 분리
 Ch06Classes.java         택배와 배송 이력을 객체로 전환
 Ch07Inheritance.java     배송 종류별 계산을 상속으로 분리
 Ch08Repository.java      업무 처리와 저장 기능 분리
