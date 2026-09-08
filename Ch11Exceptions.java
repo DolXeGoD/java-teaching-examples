@@ -169,8 +169,12 @@ abstract class Parcel {
     // 지역과 무게에 따른 공통 기본 배송비를 계산한다.
     int calculateBaseFee() {
         int fee = 3000;
-        if (weight >= 3) fee += 2000;
-        if (destination.equals("제주")) fee += 3000;
+        if (weight >= 3) {
+            fee += 2000;
+        }
+        if (destination.equals("제주")) {
+            fee += 3000;
+        }
         return fee;
     }
 }
@@ -184,13 +188,19 @@ class NormalParcel extends Parcel {
     }
 
     // 일반 배송비를 계산한다.
-    int calculateFee() { return calculateBaseFee(); }
+    int calculateFee() {
+        return calculateBaseFee();
+    }
 
     // 일반 배송 일수를 반환한다.
-    int getExpectedDeliveryDays() { return 3; }
+    int getExpectedDeliveryDays() {
+        return 3;
+    }
 
     // 일반 배송 이름을 반환한다.
-    String getDeliveryType() { return "일반"; }
+    String getDeliveryType() {
+        return "일반";
+    }
 }
 
 // 특급 배송 규칙을 가진 클래스다.
@@ -202,13 +212,19 @@ class ExpressParcel extends Parcel {
     }
 
     // 특급 배송비를 계산한다.
-    int calculateFee() { return calculateBaseFee() + 2000; }
+    int calculateFee() {
+        return calculateBaseFee() + 2000;
+    }
 
     // 특급 배송 일수를 반환한다.
-    int getExpectedDeliveryDays() { return 1; }
+    int getExpectedDeliveryDays() {
+        return 1;
+    }
 
     // 특급 배송 이름을 반환한다.
-    String getDeliveryType() { return "특급"; }
+    String getDeliveryType() {
+        return "특급";
+    }
 }
 
 // 냉장 배송 규칙을 가진 클래스다.
@@ -220,13 +236,19 @@ class RefrigeratedParcel extends Parcel {
     }
 
     // 냉장 배송비를 계산한다.
-    int calculateFee() { return calculateBaseFee() + 4000; }
+    int calculateFee() {
+        return calculateBaseFee() + 4000;
+    }
 
     // 냉장 배송 일수를 반환한다.
-    int getExpectedDeliveryDays() { return 1; }
+    int getExpectedDeliveryDays() {
+        return 1;
+    }
 
     // 냉장 배송 이름을 반환한다.
-    String getDeliveryType() { return "냉장"; }
+    String getDeliveryType() {
+        return "냉장";
+    }
 }
 
 // 해외 배송 규칙을 가진 클래스다.
@@ -238,13 +260,19 @@ class OverseasParcel extends Parcel {
     }
 
     // 해외 배송비를 계산한다.
-    int calculateFee() { return calculateBaseFee() + 15000; }
+    int calculateFee() {
+        return calculateBaseFee() + 15000;
+    }
 
     // 해외 배송 일수를 반환한다.
-    int getExpectedDeliveryDays() { return 7; }
+    int getExpectedDeliveryDays() {
+        return 7;
+    }
 
     // 해외 배송 이름을 반환한다.
-    String getDeliveryType() { return "해외"; }
+    String getDeliveryType() {
+        return "해외";
+    }
 }
 
 // 택배 상태가 바뀐 시점을 기록하는 클래스다.

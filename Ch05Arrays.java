@@ -170,10 +170,8 @@ public class Ch05Arrays {
                     break;
 
                 case 4:
-                case 5:
-                    String action = menu == 4 ? "출고" : "취소"; // 현재 선택한 처리 내용
-                    System.out.print(action + "할 운송장 번호: ");
-                    trackingNumber = scanner.nextLine(); // 출고 또는 취소할 택배의 운송장 번호
+                    System.out.print("출고할 운송장 번호: ");
+                    trackingNumber = scanner.nextLine(); // 출고할 택배의 운송장 번호
                     foundIndex = -1; // 찾은 택배의 배열 위치, 찾지 못하면 -1
 
                     // index는 현재 운송장 번호를 비교하는 택배의 배열 위치다.
@@ -189,19 +187,52 @@ public class Ch05Arrays {
                         break;
                     }
                     if (!statuses[foundIndex].equals("접수")) {
-                        System.out.println("접수 상태의 택배만 처리할 수 있습니다.");
+                        System.out.println("접수 상태의 택배만 출고할 수 있습니다.");
                         break;
                     }
 
-                    System.out.print(action + "일: ");
-                    String changedDate = scanner.nextLine(); // 출고 또는 취소 처리한 날짜
+                    System.out.print("출고일: ");
+                    String shippedDate = scanner.nextLine(); // 출고 처리한 날짜
                     historyTrackingNumbers[historyCount] = trackingNumber;
                     beforeStatuses[historyCount] = statuses[foundIndex];
-                    afterStatuses[historyCount] = action;
-                    changedDates[historyCount] = changedDate;
+                    afterStatuses[historyCount] = "출고";
+                    changedDates[historyCount] = shippedDate;
                     historyCount++;
-                    statuses[foundIndex] = action;
-                    System.out.println(action + " 처리했습니다.");
+                    statuses[foundIndex] = "출고";
+                    System.out.println("출고 처리했습니다.");
+                    break;
+
+                case 5:
+                    System.out.print("취소할 운송장 번호: ");
+                    trackingNumber = scanner.nextLine(); // 취소할 택배의 운송장 번호
+                    foundIndex = -1; // 찾은 택배의 배열 위치, 찾지 못하면 -1
+
+                    // index는 현재 운송장 번호를 비교하는 택배의 배열 위치다.
+                    for (int index = 0; index < parcelCount; index++) {
+                        if (trackingNumbers[index].equals(trackingNumber)) {
+                            foundIndex = index;
+                            break;
+                        }
+                    }
+
+                    if (foundIndex == -1) {
+                        System.out.println("존재하지 않는 운송장 번호입니다.");
+                        break;
+                    }
+                    if (!statuses[foundIndex].equals("접수")) {
+                        System.out.println("접수 상태의 택배만 취소할 수 있습니다.");
+                        break;
+                    }
+
+                    System.out.print("취소일: ");
+                    String canceledDate = scanner.nextLine(); // 취소 처리한 날짜
+                    historyTrackingNumbers[historyCount] = trackingNumber;
+                    beforeStatuses[historyCount] = statuses[foundIndex];
+                    afterStatuses[historyCount] = "취소";
+                    changedDates[historyCount] = canceledDate;
+                    historyCount++;
+                    statuses[foundIndex] = "취소";
+                    System.out.println("배송을 취소했습니다.");
                     break;
 
                 case 6:

@@ -75,14 +75,27 @@ class ParcelService {
     Parcel createParcel(String trackingNumber, String receiverName, String receiverPhoneNumber,
                         String destination, int weight, String deliveryType,
                         LocalDate registeredDate) {
-        if (deliveryType.equals("특급")) return new ExpressParcel(trackingNumber, receiverName,
-                receiverPhoneNumber, destination, weight, registeredDate);
-        if (deliveryType.equals("냉장")) return new RefrigeratedParcel(trackingNumber, receiverName,
-                receiverPhoneNumber, destination, weight, registeredDate);
-        if (deliveryType.equals("해외")) return new OverseasParcel(trackingNumber, receiverName,
-                receiverPhoneNumber, destination, weight, registeredDate);
-        return new NormalParcel(trackingNumber, receiverName, receiverPhoneNumber,
+        if (deliveryType.equals("특급")) {
+            Parcel parcel = new ExpressParcel(trackingNumber, receiverName,
+                    receiverPhoneNumber, destination, weight, registeredDate);
+            return parcel;
+        }
+
+        if (deliveryType.equals("냉장")) {
+            Parcel parcel = new RefrigeratedParcel(trackingNumber, receiverName,
+                    receiverPhoneNumber, destination, weight, registeredDate);
+            return parcel;
+        }
+
+        if (deliveryType.equals("해외")) {
+            Parcel parcel = new OverseasParcel(trackingNumber, receiverName,
+                    receiverPhoneNumber, destination, weight, registeredDate);
+            return parcel;
+        }
+
+        Parcel parcel = new NormalParcel(trackingNumber, receiverName, receiverPhoneNumber,
                 destination, weight, registeredDate);
+        return parcel;
     }
 }
 
@@ -118,7 +131,9 @@ class MemoryStorage<T> {
 // 택배 업무 처리에 실패했을 때 사용하는 예외 클래스다.
 class ParcelException extends Exception {
     // 오류 원인을 예외 메시지로 전달한다.
-    ParcelException(String message) { super(message); }
+    ParcelException(String message) {
+        super(message);
+    }
 }
 
 // 택배 저장과 조회 기능을 약속하는 인터페이스다.
@@ -147,7 +162,9 @@ class MemoryParcelRepository implements ParcelRepository {
     public Parcel findByTrackingNumber(String trackingNumber) {
         for (int index = 0; index < parcels.size(); index++) {
             Parcel parcel = parcels.get(index);
-            if (parcel.trackingNumber.equals(trackingNumber)) return parcel;
+            if (parcel.trackingNumber.equals(trackingNumber)) {
+                return parcel;
+            }
         }
         return null;
     }
@@ -197,8 +214,12 @@ abstract class Parcel {
     // 지역과 무게에 따른 공통 기본 배송비를 계산한다.
     int calculateBaseFee() {
         int fee = 3000;
-        if (weight >= 3) fee += 2000;
-        if (destination.equals("제주")) fee += 3000;
+        if (weight >= 3) {
+            fee += 2000;
+        }
+        if (destination.equals("제주")) {
+            fee += 3000;
+        }
         return fee;
     }
 }
@@ -211,11 +232,17 @@ class NormalParcel extends Parcel {
         super(trackingNumber, receiverName, receiverPhoneNumber, destination, weight, registeredDate);
     }
     // 일반 배송비를 계산한다.
-    int calculateFee() { return calculateBaseFee(); }
+    int calculateFee() {
+        return calculateBaseFee();
+    }
     // 일반 배송 일수를 반환한다.
-    int getExpectedDeliveryDays() { return 3; }
+    int getExpectedDeliveryDays() {
+        return 3;
+    }
     // 일반 배송 이름을 반환한다.
-    String getDeliveryType() { return "일반"; }
+    String getDeliveryType() {
+        return "일반";
+    }
 }
 
 // 특급 배송 규칙을 가진 클래스다.
@@ -226,11 +253,17 @@ class ExpressParcel extends Parcel {
         super(trackingNumber, receiverName, receiverPhoneNumber, destination, weight, registeredDate);
     }
     // 특급 배송비를 계산한다.
-    int calculateFee() { return calculateBaseFee() + 2000; }
+    int calculateFee() {
+        return calculateBaseFee() + 2000;
+    }
     // 특급 배송 일수를 반환한다.
-    int getExpectedDeliveryDays() { return 1; }
+    int getExpectedDeliveryDays() {
+        return 1;
+    }
     // 특급 배송 이름을 반환한다.
-    String getDeliveryType() { return "특급"; }
+    String getDeliveryType() {
+        return "특급";
+    }
 }
 
 // 냉장 배송 규칙을 가진 클래스다.
@@ -241,11 +274,17 @@ class RefrigeratedParcel extends Parcel {
         super(trackingNumber, receiverName, receiverPhoneNumber, destination, weight, registeredDate);
     }
     // 냉장 배송비를 계산한다.
-    int calculateFee() { return calculateBaseFee() + 4000; }
+    int calculateFee() {
+        return calculateBaseFee() + 4000;
+    }
     // 냉장 배송 일수를 반환한다.
-    int getExpectedDeliveryDays() { return 1; }
+    int getExpectedDeliveryDays() {
+        return 1;
+    }
     // 냉장 배송 이름을 반환한다.
-    String getDeliveryType() { return "냉장"; }
+    String getDeliveryType() {
+        return "냉장";
+    }
 }
 
 // 해외 배송 규칙을 가진 클래스다.
@@ -256,11 +295,17 @@ class OverseasParcel extends Parcel {
         super(trackingNumber, receiverName, receiverPhoneNumber, destination, weight, registeredDate);
     }
     // 해외 배송비를 계산한다.
-    int calculateFee() { return calculateBaseFee() + 15000; }
+    int calculateFee() {
+        return calculateBaseFee() + 15000;
+    }
     // 해외 배송 일수를 반환한다.
-    int getExpectedDeliveryDays() { return 7; }
+    int getExpectedDeliveryDays() {
+        return 7;
+    }
     // 해외 배송 이름을 반환한다.
-    String getDeliveryType() { return "해외"; }
+    String getDeliveryType() {
+        return "해외";
+    }
 }
 
 // 상태 변경 시각까지 보관하는 배송 이력 클래스다.
