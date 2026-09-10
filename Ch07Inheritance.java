@@ -101,7 +101,7 @@ public class Ch07Inheritance {
     }
 
     // ========== CH07 변경 ==========
-    // 배송 종류에 따라 자식 객체를 만든다.
+    // 배송 종류 enum과 배송비 조건문을 자식 클래스 선택으로 바꾼다.
     // =================================
     static Parcel createParcel(String deliveryType, String trackingNumber,
                                String receiverName, String receiverPhoneNumber,
@@ -243,6 +243,9 @@ public class Ch07Inheritance {
 }
 
 // 배송 종류가 공유하는 기본 정보와 기능을 가진 부모 클래스다.
+// ========== CH07 변경 ==========
+// 공통 정보는 부모 클래스에 두고, 배송 종류별 계산은 자식 클래스에 맡긴다.
+// =================================
 abstract class Parcel {
     String trackingNumber;
     String receiverName;

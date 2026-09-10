@@ -22,6 +22,9 @@ public class Ch20JdbcStorage {
     static final String DB_USER = "root";
     static final String DB_PASSWORD = "비밀번호 입력";
 
+    // ========== CH20 변경 ==========
+    // 파일 저장소 대신 DB 연결과 JdbcParcelRepository를 사용한다.
+    // =================================
     // JDBC 저장소로 바뀐 뒤에도 서비스 사용 방식은 같다는 것을 보여 준다.
     public static void main(String[] args) {
         try (Connection connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
@@ -143,6 +146,9 @@ class JdbcParcelRepository implements ParcelRepository {
     }
 
     // 택배와 해당 택배의 배송 이력을 하나의 작업으로 저장한다.
+    // ========== CH20 변경 ==========
+    // 택배 행을 저장한 뒤 배송 이력 행도 함께 DB에 저장한다.
+    // =================================
     public void save(Parcel parcel) throws SQLException {
         String parcelSql = "INSERT INTO parcels "
                 + "(tracking_number, receiver_name, receiver_phone_number, destination, weight, "
@@ -177,6 +183,9 @@ class JdbcParcelRepository implements ParcelRepository {
     }
 
     // 운송장 번호에 해당하는 택배와 배송 이력을 조회한다.
+    // ========== CH20 변경 ==========
+    // DB 행을 Parcel 객체로 만들고, 별도 조회한 배송 이력까지 연결한다.
+    // =================================
     public Parcel findByTrackingNumber(String trackingNumber) throws SQLException {
         String sql = "SELECT * FROM parcels WHERE tracking_number = ?";
 

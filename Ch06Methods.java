@@ -22,9 +22,6 @@ public class Ch06Methods {
     // 메뉴 입력에 사용하는 스캐너다.
     static Scanner scanner = new Scanner(System.in);
 
-    // ========== CH06 변경 ==========
-    // 병렬 배열 대신 택배 객체 배열을 사용한다.
-    // =================================
     static Parcel[] parcels = new Parcel[100];
     static int parcelCount = 0;
 
@@ -319,9 +316,6 @@ class Parcel {
     String registeredDate;
     int expectedDeliveryDays;
 
-    // ========== CH06 변경 ==========
-    // 배송 이력도 택배 객체 안에서 관리한다.
-    // =================================
     DeliveryHistory[] histories = new DeliveryHistory[20];
     int historyCount = 0;
 
@@ -358,4 +352,3 @@ class DeliveryHistory {
         this.changedDate = changedDate;
     }
 }
-

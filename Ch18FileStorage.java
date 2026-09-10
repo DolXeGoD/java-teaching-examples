@@ -159,6 +159,9 @@ class FileParcelRepository implements ParcelRepository {
     }
 
     // 두 파일의 내용을 읽어 택배와 이력을 복원한다.
+    // ========== CH18 변경 ==========
+    // 프로그램을 다시 실행해도 기존 데이터를 사용할 수 있도록 파일 내용을 객체로 복원한다.
+    // =================================
     private void load() throws IOException {
         if (Files.exists(PARCEL_FILE)) {
             for (String line : Files.readAllLines(PARCEL_FILE)) {
@@ -193,6 +196,9 @@ class FileParcelRepository implements ParcelRepository {
     }
 
     // 메모리에 있는 택배와 이력을 각각의 파일에 저장한다.
+    // ========== CH18 변경 ==========
+    // 메모리의 객체 목록을 택배 파일과 이력 파일에 나누어 저장한다.
+    // =================================
     private void writeAll() throws IOException {
         List<String> parcelLines = new ArrayList<>();
         List<String> historyLines = new ArrayList<>();

@@ -258,6 +258,9 @@ class ParcelService {
 }
 
 // 택배를 저장하고 찾는 기능을 약속하는 인터페이스다.
+// ========== CH08 변경 ==========
+// 저장 기능을 인터페이스로 분리해 업무 코드가 배열 구현을 직접 알지 않게 한다.
+// =================================
 interface ParcelRepository {
     // 택배를 저장하거나 기존 택배 정보를 갱신한다.
     void save(Parcel parcel);
@@ -273,6 +276,9 @@ interface ParcelRepository {
 }
 
 // 택배를 배열에 저장하는 Repository 구현체다.
+// ========== CH08 변경 ==========
+// 기존 배열 저장 방식은 MemoryParcelRepository 구현으로 옮긴다.
+// =================================
 class MemoryParcelRepository implements ParcelRepository {
     private Parcel[] parcels = new Parcel[100];
     private int count = 0;

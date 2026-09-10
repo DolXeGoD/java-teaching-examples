@@ -7,6 +7,9 @@ enum ParcelStatus {
 }
 
 public class Ch11Exceptions {
+    // ========== CH11 변경 ==========
+    // try-catch로 업무 처리 중 발생한 예외를 한곳에서 처리한다.
+    // =================================
     // 예외 처리 전후를 확인할 간단한 실행 예시다.
     public static void main(String[] args) {
         ParcelService parcelService = new ParcelService(new MemoryParcelRepository());
@@ -23,6 +26,9 @@ public class Ch11Exceptions {
 }
 
 // 택배 업무 규칙을 처리하는 클래스다.
+// ========== CH11 변경 ==========
+// 실패 상황을 출력문으로 끝내지 않고 ParcelException으로 호출한 쪽에 전달한다.
+// =================================
 class ParcelService {
     private ParcelRepository parcelRepository;
 
