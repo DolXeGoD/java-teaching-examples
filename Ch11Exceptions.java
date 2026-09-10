@@ -1,3 +1,11 @@
+// 택배의 현재 상태와 배송 이력에 기록할 상태다.
+enum ParcelStatus {
+    없음,
+    접수,
+    출고,
+    취소
+}
+
 public class Ch11Exceptions {
     // 예외 처리 전후를 확인할 간단한 실행 예시다.
     public static void main(String[] args) {
@@ -6,8 +14,8 @@ public class Ch11Exceptions {
         try {
             parcelService.register("1001", "홍길동", "010-1111-2222", "서울", 2,
                     "특급", "2026-09-01");
-            parcelService.changeStatus("1001", "출고", "2026-09-01");
-            parcelService.changeStatus("1001", "취소", "2026-09-01");
+            parcelService.changeStatus("1001", ParcelStatus.출고, "2026-09-01");
+            parcelService.changeStatus("1001", ParcelStatus.취소, "2026-09-01");
         } catch (ParcelException exception) {
             System.out.println(exception.getMessage());
         }
@@ -33,18 +41,18 @@ class ParcelService {
 
         Parcel parcel = createParcel(trackingNumber, receiverName, receiverPhoneNumber,
                 destination, weight, deliveryType, registeredDate);
-        parcel.addHistory("없음", "접수", registeredDate);
+        parcel.addHistory(ParcelStatus.없음, ParcelStatus.접수, registeredDate);
         parcelRepository.save(parcel);
 
         System.out.println("택배 접수: " + parcel.trackingNumber);
     }
 
     // 접수 상태의 택배를 출고 또는 취소 상태로 바꾼다.
-    void changeStatus(String trackingNumber, String afterStatus, String changedDate)
+    void changeStatus(String trackingNumber, ParcelStatus afterStatus, String changedDate)
             throws ParcelException {
         Parcel parcel = findParcel(trackingNumber);
 
-        if (!parcel.status.equals("접수")) {
+        if (parcel.status != ParcelStatus.접수) {
             throw new ParcelException("접수 상태의 택배만 처리할 수 있습니다.");
         }
 
@@ -135,7 +143,7 @@ abstract class Parcel {
     String receiverPhoneNumber;
     String destination;
     int weight;
-    String status = "접수";
+    ParcelStatus status = ParcelStatus.접수;
     String registeredDate;
     DeliveryHistory[] histories = new DeliveryHistory[20];
     int historyCount = 0;
@@ -152,7 +160,7 @@ abstract class Parcel {
     }
 
     // 상태 변경 이력을 이 택배에 추가한다.
-    void addHistory(String beforeStatus, String afterStatus, String changedDate) {
+    void addHistory(ParcelStatus beforeStatus, ParcelStatus afterStatus, String changedDate) {
         histories[historyCount] = new DeliveryHistory(beforeStatus, afterStatus, changedDate);
         historyCount++;
     }
@@ -277,12 +285,12 @@ class OverseasParcel extends Parcel {
 
 // 택배 상태가 바뀐 시점을 기록하는 클래스다.
 class DeliveryHistory {
-    String beforeStatus;
-    String afterStatus;
+    ParcelStatus beforeStatus;
+    ParcelStatus afterStatus;
     String changedDate;
 
     // 배송 이력 한 건을 초기화한다.
-    DeliveryHistory(String beforeStatus, String afterStatus, String changedDate) {
+    DeliveryHistory(ParcelStatus beforeStatus, ParcelStatus afterStatus, String changedDate) {
         this.beforeStatus = beforeStatus;
         this.afterStatus = afterStatus;
         this.changedDate = changedDate;

@@ -1,5 +1,20 @@
 import java.util.Scanner;
 
+// 택배 접수 때 선택할 수 있는 배송 종류다.
+enum DeliveryType {
+    일반,
+    특급,
+    냉장,
+    해외
+}
+
+// 택배가 가질 수 있는 현재 배송 상태다.
+enum ParcelStatus {
+    접수,
+    출고,
+    취소
+}
+
 public class Ch05Arrays {
     // Ch05 V1: 아직 사용자 정의 메서드를 만들지 않고 main 안에서 모든 기능을 처리한다.
     public static void main(String[] args) {
@@ -11,10 +26,10 @@ public class Ch05Arrays {
         String[] receiverNames = new String[100]; // 수령인 이름
         String[] receiverPhoneNumbers = new String[100]; // 수령인 연락처
         String[] destinations = new String[100]; // 배송 지역
-        String[] deliveryTypes = new String[100]; // 일반, 특급, 냉장, 해외 등의 배송 종류
+        DeliveryType[] deliveryTypes = new DeliveryType[100]; // 일반, 특급, 냉장, 해외 중 하나인 배송 종류
         int[] weights = new int[100]; // 택배 무게(kg)
         int[] fees = new int[100]; // 계산된 배송비
-        String[] statuses = new String[100]; // 현재 배송 상태
+        ParcelStatus[] statuses = new ParcelStatus[100]; // 접수, 출고, 취소 중 하나인 현재 배송 상태
         String[] registeredDates = new String[100]; // 택배를 접수한 날짜
         int[] expectedDeliveryDays = new int[100]; // 예상 배송 소요일
         int parcelCount = 0; // 현재 접수되어 배열에 저장된 택배 수
@@ -75,7 +90,24 @@ public class Ch05Arrays {
                     int weight = scanner.nextInt(); // 새 택배의 무게
                     scanner.nextLine();
                     System.out.print("배송 종류(일반/특급/냉장/해외): ");
-                    String deliveryType = scanner.nextLine(); // 새 택배의 배송 종류
+                    String deliveryTypeInput = scanner.nextLine(); // 사용자가 입력한 배송 종류 문자열
+                    DeliveryType deliveryType = null; // 문자열을 바꿔 저장할 배송 종류 enum 값
+
+                    if (deliveryTypeInput.equals("일반")) {
+                        deliveryType = DeliveryType.일반;
+                    } else if (deliveryTypeInput.equals("특급")) {
+                        deliveryType = DeliveryType.특급;
+                    } else if (deliveryTypeInput.equals("냉장")) {
+                        deliveryType = DeliveryType.냉장;
+                    } else if (deliveryTypeInput.equals("해외")) {
+                        deliveryType = DeliveryType.해외;
+                    }
+
+                    if (deliveryType == null) {
+                        System.out.println("배송 종류를 다시 입력하세요.");
+                        break;
+                    }
+
                     System.out.print("접수일(예: 2026-09-01): ");
                     String registeredDate = scanner.nextLine(); // 새 택배를 접수한 날짜
 
@@ -86,18 +118,18 @@ public class Ch05Arrays {
                     if (destination.equals("제주")) {
                         fee += 3000;
                     }
-                    if (deliveryType.equals("특급")) {
+                    if (deliveryType == DeliveryType.특급) {
                         fee += 2000;
-                    } else if (deliveryType.equals("냉장")) {
+                    } else if (deliveryType == DeliveryType.냉장) {
                         fee += 4000;
-                    } else if (deliveryType.equals("해외")) {
+                    } else if (deliveryType == DeliveryType.해외) {
                         fee += 15000;
                     }
 
                     int expectedDays = 3; // 기본 예상 배송일에서 배송 종류에 따라 변경할 변수
-                    if (deliveryType.equals("특급") || deliveryType.equals("냉장")) {
+                    if (deliveryType == DeliveryType.특급 || deliveryType == DeliveryType.냉장) {
                         expectedDays = 1;
-                    } else if (deliveryType.equals("해외")) {
+                    } else if (deliveryType == DeliveryType.해외) {
                         expectedDays = 7;
                     }
 
@@ -108,7 +140,7 @@ public class Ch05Arrays {
                     deliveryTypes[parcelCount] = deliveryType;
                     weights[parcelCount] = weight;
                     fees[parcelCount] = fee;
-                    statuses[parcelCount] = "접수";
+                    statuses[parcelCount] = ParcelStatus.접수;
                     registeredDates[parcelCount] = registeredDate;
                     expectedDeliveryDays[parcelCount] = expectedDays;
                     parcelCount++;
@@ -186,7 +218,7 @@ public class Ch05Arrays {
                         System.out.println("존재하지 않는 운송장 번호입니다.");
                         break;
                     }
-                    if (!statuses[foundIndex].equals("접수")) {
+                    if (statuses[foundIndex] != ParcelStatus.접수) {
                         System.out.println("접수 상태의 택배만 출고할 수 있습니다.");
                         break;
                     }
@@ -194,11 +226,11 @@ public class Ch05Arrays {
                     System.out.print("출고일: ");
                     String shippedDate = scanner.nextLine(); // 출고 처리한 날짜
                     historyTrackingNumbers[historyCount] = trackingNumber;
-                    beforeStatuses[historyCount] = statuses[foundIndex];
+                    beforeStatuses[historyCount] = "접수";
                     afterStatuses[historyCount] = "출고";
                     changedDates[historyCount] = shippedDate;
                     historyCount++;
-                    statuses[foundIndex] = "출고";
+                    statuses[foundIndex] = ParcelStatus.출고;
                     System.out.println("출고 처리했습니다.");
                     break;
 
@@ -219,7 +251,7 @@ public class Ch05Arrays {
                         System.out.println("존재하지 않는 운송장 번호입니다.");
                         break;
                     }
-                    if (!statuses[foundIndex].equals("접수")) {
+                    if (statuses[foundIndex] != ParcelStatus.접수) {
                         System.out.println("접수 상태의 택배만 취소할 수 있습니다.");
                         break;
                     }
@@ -227,11 +259,11 @@ public class Ch05Arrays {
                     System.out.print("취소일: ");
                     String canceledDate = scanner.nextLine(); // 취소 처리한 날짜
                     historyTrackingNumbers[historyCount] = trackingNumber;
-                    beforeStatuses[historyCount] = statuses[foundIndex];
+                    beforeStatuses[historyCount] = "접수";
                     afterStatuses[historyCount] = "취소";
                     changedDates[historyCount] = canceledDate;
                     historyCount++;
-                    statuses[foundIndex] = "취소";
+                    statuses[foundIndex] = ParcelStatus.취소;
                     System.out.println("배송을 취소했습니다.");
                     break;
 

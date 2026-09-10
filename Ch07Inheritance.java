@@ -1,5 +1,13 @@
 import java.util.Scanner;
 
+// 택배의 현재 상태와 배송 이력에 기록할 상태다.
+enum ParcelStatus {
+    없음,
+    접수,
+    출고,
+    취소
+}
+
 public class Ch07Inheritance {
     // 메뉴 입력에 사용하는 스캐너다.
     static Scanner scanner = new Scanner(System.in);
@@ -25,10 +33,10 @@ public class Ch07Inheritance {
                     printAllParcels();
                     break;
                 case 4:
-                    changeStatus("출고", "출고일: ");
+                    changeStatus(ParcelStatus.출고, "출고일: ");
                     break;
                 case 5:
-                    changeStatus("취소", "취소일: ");
+                    changeStatus(ParcelStatus.취소, "취소일: ");
                     break;
                 case 6:
                     printHistory();
@@ -85,7 +93,7 @@ public class Ch07Inheritance {
                 registeredDate
         );
 
-        parcel.addHistory("없음", "접수", registeredDate);
+        parcel.addHistory(ParcelStatus.없음, ParcelStatus.접수, registeredDate);
         parcels[parcelCount] = parcel;
         parcelCount++;
 
@@ -144,7 +152,7 @@ public class Ch07Inheritance {
     }
 
     // 출고 또는 취소 상태로 바꾸고 이력을 남긴다.
-    static void changeStatus(String afterStatus, String dateMessage) {
+    static void changeStatus(ParcelStatus afterStatus, String dateMessage) {
         String trackingNumber = readLine(afterStatus + "할 운송장 번호: ");
         Parcel parcel = findParcelByTrackingNumber(trackingNumber);
 
@@ -153,7 +161,7 @@ public class Ch07Inheritance {
             return;
         }
 
-        if (!parcel.status.equals("접수")) {
+        if (parcel.status != ParcelStatus.접수) {
             System.out.println("접수 상태의 택배만 처리할 수 있습니다.");
             return;
         }
@@ -241,7 +249,7 @@ abstract class Parcel {
     String receiverPhoneNumber;
     String destination;
     int weight;
-    String status;
+    ParcelStatus status;
     String registeredDate;
     DeliveryHistory[] histories = new DeliveryHistory[20];
     int historyCount = 0;
@@ -255,11 +263,11 @@ abstract class Parcel {
         this.destination = destination;
         this.weight = weight;
         this.registeredDate = registeredDate;
-        this.status = "접수";
+        this.status = ParcelStatus.접수;
     }
 
     // 이 택배의 상태 변경 이력을 추가한다.
-    void addHistory(String beforeStatus, String afterStatus, String changedDate) {
+    void addHistory(ParcelStatus beforeStatus, ParcelStatus afterStatus, String changedDate) {
         histories[historyCount] = new DeliveryHistory(beforeStatus, afterStatus, changedDate);
         historyCount++;
     }
@@ -387,12 +395,12 @@ class OverseasParcel extends Parcel {
 
 // 택배 상태가 바뀐 시점을 기록하는 클래스다.
 class DeliveryHistory {
-    String beforeStatus;
-    String afterStatus;
+    ParcelStatus beforeStatus;
+    ParcelStatus afterStatus;
     String changedDate;
 
     // 배송 이력 한 건을 초기화한다.
-    DeliveryHistory(String beforeStatus, String afterStatus, String changedDate) {
+    DeliveryHistory(ParcelStatus beforeStatus, ParcelStatus afterStatus, String changedDate) {
         this.beforeStatus = beforeStatus;
         this.afterStatus = afterStatus;
         this.changedDate = changedDate;

@@ -8,6 +8,14 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+// 택배의 현재 상태와 배송 이력에 기록할 상태다.
+enum ParcelStatus {
+    없음,
+    접수,
+    출고,
+    취소
+}
+
 public class Ch20JdbcStorage {
     // 수업용 DB 접속 정보다. 각자 환경에 맞게 수정한다.
     static final String DB_URL = "jdbc:mysql://localhost:3306/delivery?serverTimezone=Asia/Seoul";
@@ -20,7 +28,7 @@ public class Ch20JdbcStorage {
             ParcelService parcelService = new ParcelService(new JdbcParcelRepository(connection));
 
             parcelService.register("1001", "홍길동", "010-1111-2222", "서울", 2, "특급");
-            parcelService.changeStatus("1001", "출고");
+            parcelService.changeStatus("1001", ParcelStatus.출고);
             parcelService.printAllParcels();
         } catch (ParcelException | SQLException exception) {
             System.out.println(exception.getMessage());
@@ -48,15 +56,15 @@ class ParcelService {
         Parcel parcel = createParcel(trackingNumber, receiverName, receiverPhoneNumber,
                 destination, weight, deliveryType, LocalDate.now());
         parcel.expectedDeliveryDate = parcel.registeredDate.plusDays(parcel.getExpectedDeliveryDays());
-        parcel.addHistory("없음", "접수");
+        parcel.addHistory(ParcelStatus.없음, ParcelStatus.접수);
         parcelRepository.save(parcel);
     }
 
     // 접수 상태의 택배를 출고 또는 취소 상태로 바꾼다.
-    void changeStatus(String trackingNumber, String afterStatus)
+    void changeStatus(String trackingNumber, ParcelStatus afterStatus)
             throws ParcelException, SQLException {
         Parcel parcel = findParcel(trackingNumber);
-        if (!parcel.status.equals("접수")) {
+        if (parcel.status != ParcelStatus.접수) {
             throw new ParcelException("접수 상태의 택배만 처리할 수 있습니다.");
         }
 
@@ -156,7 +164,7 @@ class JdbcParcelRepository implements ParcelRepository {
             parcelStatement.setInt(5, parcel.weight);
             parcelStatement.setString(6, parcel.getDeliveryType());
             parcelStatement.setInt(7, parcel.calculateFee());
-            parcelStatement.setString(8, parcel.status);
+            parcelStatement.setString(8, parcel.status.toString());
             parcelStatement.setString(9, parcel.registeredDate.toString());
             parcelStatement.setString(10, parcel.expectedDeliveryDate.toString());
             parcelStatement.executeUpdate();
@@ -222,8 +230,8 @@ class JdbcParcelRepository implements ParcelRepository {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             for (DeliveryHistory history : parcel.histories) {
                 statement.setString(1, parcel.trackingNumber);
-                statement.setString(2, history.beforeStatus);
-                statement.setString(3, history.afterStatus);
+                statement.setString(2, history.beforeStatus.toString());
+                statement.setString(3, history.afterStatus.toString());
                 statement.setString(4, history.changedAt.toString());
                 statement.addBatch();
             }
@@ -256,7 +264,7 @@ class JdbcParcelRepository implements ParcelRepository {
                     destination, weight, registeredDate);
         }
 
-        parcel.status = resultSet.getString("status");
+        parcel.status = ParcelStatus.valueOf(resultSet.getString("status"));
         parcel.expectedDeliveryDate = LocalDate.parse(resultSet.getString("expected_delivery_at"));
         return parcel;
     }
@@ -272,8 +280,8 @@ class JdbcParcelRepository implements ParcelRepository {
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
                     parcel.histories.add(new DeliveryHistory(
-                            resultSet.getString("before_status"),
-                            resultSet.getString("after_status"),
+                            ParcelStatus.valueOf(resultSet.getString("before_status")),
+                            ParcelStatus.valueOf(resultSet.getString("after_status")),
                             LocalDateTime.parse(resultSet.getString("changed_at"))
                     ));
                 }
@@ -297,7 +305,7 @@ abstract class Parcel {
     String receiverPhoneNumber;
     String destination;
     int weight;
-    String status = "접수";
+    ParcelStatus status = ParcelStatus.접수;
     LocalDate registeredDate;
     LocalDate expectedDeliveryDate;
     List<DeliveryHistory> histories = new ArrayList<>();
@@ -314,7 +322,7 @@ abstract class Parcel {
     }
 
     // 상태 변경 이력을 목록에 추가한다.
-    void addHistory(String beforeStatus, String afterStatus) {
+    void addHistory(ParcelStatus beforeStatus, ParcelStatus afterStatus) {
         histories.add(new DeliveryHistory(beforeStatus, afterStatus, LocalDateTime.now()));
     }
 
@@ -426,12 +434,12 @@ class OverseasParcel extends Parcel {
 
 // 상태 변경 시각까지 보관하는 배송 이력 클래스다.
 class DeliveryHistory {
-    String beforeStatus;
-    String afterStatus;
+    ParcelStatus beforeStatus;
+    ParcelStatus afterStatus;
     LocalDateTime changedAt;
 
     // 배송 이력 한 건을 초기화한다.
-    DeliveryHistory(String beforeStatus, String afterStatus, LocalDateTime changedAt) {
+    DeliveryHistory(ParcelStatus beforeStatus, ParcelStatus afterStatus, LocalDateTime changedAt) {
         this.beforeStatus = beforeStatus;
         this.afterStatus = afterStatus;
         this.changedAt = changedAt;

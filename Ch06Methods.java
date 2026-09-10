@@ -1,31 +1,32 @@
 import java.util.Scanner;
 
-// ========== CH06 변경 ==========
-// 길어진 main 메서드의 기능별 코드를 static 메서드로 분리한다.
+// 택배 접수 때 선택할 수 있는 배송 종류다.
+enum DeliveryType {
+    일반,
+    특급,
+    냉장,
+    해외
+}
+
+// 택배가 가질 수 있는 현재 배송 상태다.
+enum ParcelStatus {
+    접수,
+    출고,
+    취소
+}
+
+// ========== CH06 메서드 변경 ==========
+// Ch06Classes에서 main에 작성한 기능별 코드를 static 메서드로 분리한다.
 // =================================
 public class Ch06Methods {
     // 메뉴 입력에 사용하는 스캐너다.
     static Scanner scanner = new Scanner(System.in);
 
-    // 택배 정보를 같은 인덱스로 관리하는 병렬 배열이다.
-    static String[] trackingNumbers = new String[100];
-    static String[] receiverNames = new String[100];
-    static String[] receiverPhoneNumbers = new String[100];
-    static String[] destinations = new String[100];
-    static String[] deliveryTypes = new String[100];
-    static int[] weights = new int[100];
-    static int[] fees = new int[100];
-    static String[] statuses = new String[100];
-    static String[] registeredDates = new String[100];
-    static int[] expectedDeliveryDays = new int[100];
+    // ========== CH06 변경 ==========
+    // 병렬 배열 대신 택배 객체 배열을 사용한다.
+    // =================================
+    static Parcel[] parcels = new Parcel[100];
     static int parcelCount = 0;
-
-    // 배송 이력을 같은 인덱스로 관리하는 병렬 배열이다.
-    static String[] historyTrackingNumbers = new String[500];
-    static String[] beforeStatuses = new String[500];
-    static String[] afterStatuses = new String[500];
-    static String[] changedDates = new String[500];
-    static int historyCount = 0;
 
     // 프로그램 메뉴를 반복해서 실행한다.
     public static void main(String[] args) {
@@ -74,15 +75,15 @@ public class Ch06Methods {
         System.out.println("=====================================");
     }
 
-    // 택배 정보를 배열에 추가한다.
+    // 택배 객체를 만들어 배열에 저장한다.
     static void registerParcel() {
-        if (parcelCount == trackingNumbers.length) {
+        if (parcelCount == parcels.length) {
             System.out.println("더 이상 택배를 접수할 수 없습니다.");
             return;
         }
 
         String trackingNumber = readLine("운송장 번호: ");
-        if (findParcelIndex(trackingNumber) != -1) {
+        if (findParcelByTrackingNumber(trackingNumber) != null) {
             System.out.println("이미 사용 중인 운송장 번호입니다.");
             return;
         }
@@ -91,40 +92,42 @@ public class Ch06Methods {
         String receiverPhoneNumber = readLine("수령인 연락처: ");
         String destination = readLine("배송 지역: ");
         int weight = readInt("무게(kg): ");
-        String deliveryType = readDeliveryType();
+        DeliveryType deliveryType = readDeliveryType();
         String registeredDate = readLine("접수일(예: 2026-09-01): ");
 
-        trackingNumbers[parcelCount] = trackingNumber;
-        receiverNames[parcelCount] = receiverName;
-        receiverPhoneNumbers[parcelCount] = receiverPhoneNumber;
-        destinations[parcelCount] = destination;
-        deliveryTypes[parcelCount] = deliveryType;
-        weights[parcelCount] = weight;
-        fees[parcelCount] = calculateFee(destination, weight, deliveryType);
-        statuses[parcelCount] = "접수";
-        registeredDates[parcelCount] = registeredDate;
-        expectedDeliveryDays[parcelCount] = calculateExpectedDeliveryDays(deliveryType);
+        Parcel parcel = new Parcel(
+                trackingNumber,
+                receiverName,
+                receiverPhoneNumber,
+                destination,
+                deliveryType,
+                weight,
+                registeredDate
+        );
 
-        saveHistory(trackingNumber, "없음", "접수", registeredDate);
+        parcel.fee = calculateFee(parcel);
+        parcel.expectedDeliveryDays = calculateExpectedDeliveryDays(parcel.deliveryType);
+        parcel.addHistory("없음", "접수", registeredDate);
+
+        parcels[parcelCount] = parcel;
         parcelCount++;
 
-        System.out.println("택배가 접수되었습니다. 배송비: " + fees[parcelCount - 1] + "원");
+        System.out.println("택배가 접수되었습니다. 배송비: " + parcel.fee + "원");
     }
 
     // 운송장 번호로 택배 한 건을 조회한다.
     static void findParcel() {
-        String trackingNumber = readLine("운송장 번호: ");
-        int index = findParcelIndex(trackingNumber);
+        Parcel parcel = findParcelByTrackingNumber(readLine("운송장 번호: "));
 
-        if (index == -1) {
+        if (parcel == null) {
             System.out.println("존재하지 않는 운송장 번호입니다.");
             return;
         }
 
-        printParcel(index);
+        printParcel(parcel);
     }
 
-    // 현재 접수된 모든 택배를 출력한다.
+    // 접수된 모든 택배의 요약 정보를 출력한다.
     static void printAllParcels() {
         if (parcelCount == 0) {
             System.out.println("접수된 택배가 없습니다.");
@@ -132,145 +135,128 @@ public class Ch06Methods {
         }
 
         for (int index = 0; index < parcelCount; index++) {
+            Parcel parcel = parcels[index];
             System.out.println(
-                    trackingNumbers[index] + " / "
-                            + receiverNames[index] + " / "
-                            + deliveryTypes[index] + " / "
-                            + statuses[index]
+                    parcel.trackingNumber + " / "
+                            + parcel.receiverName + " / "
+                            + parcel.deliveryType + " / "
+                            + parcel.status
             );
         }
     }
 
     // 접수 상태의 택배를 출고 상태로 바꾼다.
     static void shipParcel() {
-        String trackingNumber = readLine("출고할 운송장 번호: ");
-        int index = findParcelIndex(trackingNumber);
+        Parcel parcel = findParcelByTrackingNumber(readLine("출고할 운송장 번호: "));
 
-        if (index == -1) {
+        if (parcel == null) {
             System.out.println("존재하지 않는 운송장 번호입니다.");
             return;
         }
 
-        if (!statuses[index].equals("접수")) {
+        if (parcel.status != ParcelStatus.접수) {
             System.out.println("접수 상태의 택배만 출고할 수 있습니다.");
             return;
         }
 
-        statuses[index] = "출고";
-        saveHistory(trackingNumber, "접수", "출고", readLine("출고일: "));
+        parcel.addHistory("접수", "출고", readLine("출고일: "));
+        parcel.status = ParcelStatus.출고;
         System.out.println("출고 처리했습니다.");
     }
 
     // 접수 상태의 택배를 취소 상태로 바꾼다.
     static void cancelParcel() {
-        String trackingNumber = readLine("취소할 운송장 번호: ");
-        int index = findParcelIndex(trackingNumber);
+        Parcel parcel = findParcelByTrackingNumber(readLine("취소할 운송장 번호: "));
 
-        if (index == -1) {
+        if (parcel == null) {
             System.out.println("존재하지 않는 운송장 번호입니다.");
             return;
         }
 
-        if (!statuses[index].equals("접수")) {
+        if (parcel.status != ParcelStatus.접수) {
             System.out.println("접수 상태의 택배만 취소할 수 있습니다.");
             return;
         }
 
-        statuses[index] = "취소";
-        saveHistory(trackingNumber, "접수", "취소", readLine("취소일: "));
+        parcel.addHistory("접수", "취소", readLine("취소일: "));
+        parcel.status = ParcelStatus.취소;
         System.out.println("배송을 취소했습니다.");
     }
 
-    // 운송장 번호에 해당하는 배송 이력을 출력한다.
+    // 특정 택배 안에 저장된 배송 이력을 출력한다.
     static void printHistory() {
-        String trackingNumber = readLine("운송장 번호: ");
-        boolean found = false;
+        Parcel parcel = findParcelByTrackingNumber(readLine("운송장 번호: "));
 
-        for (int index = 0; index < historyCount; index++) {
-            if (historyTrackingNumbers[index].equals(trackingNumber)) {
-                System.out.println(
-                        changedDates[index] + " / "
-                                + beforeStatuses[index] + " → "
-                                + afterStatuses[index]
-                );
-                found = true;
-            }
+        if (parcel == null) {
+            System.out.println("존재하지 않는 운송장 번호입니다.");
+            return;
         }
 
-        if (!found) {
-            System.out.println("배송 이력이 없습니다.");
+        for (int index = 0; index < parcel.historyCount; index++) {
+            DeliveryHistory history = parcel.histories[index];
+            System.out.println(
+                    history.changedDate + " / "
+                            + history.beforeStatus + " → "
+                            + history.afterStatus
+            );
         }
     }
 
-    // 배송 이력을 병렬 배열에 저장한다.
-    static void saveHistory(String trackingNumber, String beforeStatus,
-                            String afterStatus, String changedDate) {
-        historyTrackingNumbers[historyCount] = trackingNumber;
-        beforeStatuses[historyCount] = beforeStatus;
-        afterStatuses[historyCount] = afterStatus;
-        changedDates[historyCount] = changedDate;
-        historyCount++;
-    }
-
-    // 운송장 번호가 저장된 배열 위치를 찾는다.
-    static int findParcelIndex(String trackingNumber) {
+    // 운송장 번호가 같은 택배 객체를 찾는다.
+    static Parcel findParcelByTrackingNumber(String trackingNumber) {
         for (int index = 0; index < parcelCount; index++) {
-            if (trackingNumbers[index].equals(trackingNumber)) {
-                return index;
+            if (parcels[index].trackingNumber.equals(trackingNumber)) {
+                return parcels[index];
             }
         }
 
-        return -1;
+        return null;
     }
 
     // 한 택배의 상세 정보를 출력한다.
-    static void printParcel(int index) {
-        System.out.println("운송장 번호: " + trackingNumbers[index]);
-        System.out.println("수령인: " + receiverNames[index]);
-        System.out.println("연락처: " + receiverPhoneNumbers[index]);
-        System.out.println("배송 지역: " + destinations[index]);
-        System.out.println("배송 종류: " + deliveryTypes[index]);
-        System.out.println("무게: " + weights[index] + "kg");
-        System.out.println("배송비: " + fees[index] + "원");
-        System.out.println("상태: " + statuses[index]);
-        System.out.println("접수일: " + registeredDates[index]);
-        System.out.println("예상 도착: " + expectedDeliveryDays[index] + "일 후");
+    static void printParcel(Parcel parcel) {
+        System.out.println("운송장 번호: " + parcel.trackingNumber);
+        System.out.println("수령인: " + parcel.receiverName);
+        System.out.println("연락처: " + parcel.receiverPhoneNumber);
+        System.out.println("배송 지역: " + parcel.destination);
+        System.out.println("배송 종류: " + parcel.deliveryType);
+        System.out.println("무게: " + parcel.weight + "kg");
+        System.out.println("배송비: " + parcel.fee + "원");
+        System.out.println("상태: " + parcel.status);
+        System.out.println("접수일: " + parcel.registeredDate);
+        System.out.println("예상 도착: " + parcel.expectedDeliveryDays + "일 후");
     }
 
-    // 배송 지역, 무게, 배송 종류로 배송비를 계산한다.
-    static int calculateFee(String destination, int weight, String deliveryType) {
+    // V1의 배송비 조건문을 그대로 옮긴 계산 메서드다.
+    static int calculateFee(Parcel parcel) {
         int fee = 3000;
 
-        if (weight >= 3) {
+        if (parcel.weight >= 3) {
             fee += 2000;
         }
 
-        if (destination.equals("제주")) {
+        if (parcel.destination.equals("제주")) {
             fee += 3000;
         }
 
-        if (deliveryType.equals("특급")) {
+        if (parcel.deliveryType == DeliveryType.특급) {
             fee += 2000;
-        } else if (deliveryType.equals("냉장")) {
+        } else if (parcel.deliveryType == DeliveryType.냉장) {
             fee += 4000;
-        } else if (deliveryType.equals("해외")) {
+        } else if (parcel.deliveryType == DeliveryType.해외) {
             fee += 15000;
         }
 
         return fee;
     }
 
-    // 배송 종류별 예상 도착까지 걸리는 일수를 계산한다.
-    static int calculateExpectedDeliveryDays(String deliveryType) {
-        if (deliveryType.equals("특급")) {
+    // 배송 종류별 예상 도착 일수를 계산한다.
+    static int calculateExpectedDeliveryDays(DeliveryType deliveryType) {
+        if (deliveryType == DeliveryType.특급 || deliveryType == DeliveryType.냉장) {
             return 1;
         }
 
-        if (deliveryType.equals("냉장")) {
-            return 1;
-        }
-
-        if (deliveryType.equals("해외")) {
+        if (deliveryType == DeliveryType.해외) {
             return 7;
         }
 
@@ -278,13 +264,24 @@ public class Ch06Methods {
     }
 
     // 정해진 배송 종류 중 하나를 입력받는다.
-    static String readDeliveryType() {
+    static DeliveryType readDeliveryType() {
         while (true) {
-            String deliveryType = readLine("배송 종류(일반/특급/냉장/해외): ");
+            String deliveryTypeInput = readLine("배송 종류(일반/특급/냉장/해외): ");
 
-            if (deliveryType.equals("일반") || deliveryType.equals("특급")
-                    || deliveryType.equals("냉장") || deliveryType.equals("해외")) {
-                return deliveryType;
+            if (deliveryTypeInput.equals("일반")) {
+                return DeliveryType.일반;
+            }
+
+            if (deliveryTypeInput.equals("특급")) {
+                return DeliveryType.특급;
+            }
+
+            if (deliveryTypeInput.equals("냉장")) {
+                return DeliveryType.냉장;
+            }
+
+            if (deliveryTypeInput.equals("해외")) {
+                return DeliveryType.해외;
             }
 
             System.out.println("배송 종류를 다시 입력하세요.");
@@ -308,3 +305,57 @@ public class Ch06Methods {
         return scanner.nextLine();
     }
 }
+
+// 택배 한 건과 그 배송 이력을 관리하는 클래스다.
+class Parcel {
+    String trackingNumber;
+    String receiverName;
+    String receiverPhoneNumber;
+    String destination;
+    DeliveryType deliveryType;
+    int weight;
+    int fee;
+    ParcelStatus status;
+    String registeredDate;
+    int expectedDeliveryDays;
+
+    // ========== CH06 변경 ==========
+    // 배송 이력도 택배 객체 안에서 관리한다.
+    // =================================
+    DeliveryHistory[] histories = new DeliveryHistory[20];
+    int historyCount = 0;
+
+    // 택배의 기본 정보를 초기화한다.
+    Parcel(String trackingNumber, String receiverName, String receiverPhoneNumber,
+           String destination, DeliveryType deliveryType, int weight, String registeredDate) {
+        this.trackingNumber = trackingNumber;
+        this.receiverName = receiverName;
+        this.receiverPhoneNumber = receiverPhoneNumber;
+        this.destination = destination;
+        this.deliveryType = deliveryType;
+        this.weight = weight;
+        this.registeredDate = registeredDate;
+        this.status = ParcelStatus.접수;
+    }
+
+    // 이 택배의 상태 변경 이력을 추가한다.
+    void addHistory(String beforeStatus, String afterStatus, String changedDate) {
+        histories[historyCount] = new DeliveryHistory(beforeStatus, afterStatus, changedDate);
+        historyCount++;
+    }
+}
+
+// 택배 상태가 바뀐 시점을 기록하는 클래스다.
+class DeliveryHistory {
+    String beforeStatus;
+    String afterStatus;
+    String changedDate;
+
+    // 배송 이력 한 건을 초기화한다.
+    DeliveryHistory(String beforeStatus, String afterStatus, String changedDate) {
+        this.beforeStatus = beforeStatus;
+        this.afterStatus = afterStatus;
+        this.changedDate = changedDate;
+    }
+}
+
