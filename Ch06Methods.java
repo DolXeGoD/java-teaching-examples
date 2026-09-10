@@ -110,6 +110,7 @@ public class Ch06Methods {
         DeliveryType deliveryType = readDeliveryType();
         String registeredDate = readLine("접수일(예: 2026-09-01): ");
 
+        // 생성자로 택배를 만들면서, 접수에 필요한 기본 정보를 한 번에 전달한다.
         Parcel parcel = new Parcel(
                 trackingNumber,
                 receiverName,
@@ -119,10 +120,11 @@ public class Ch06Methods {
                 weight,
                 registeredDate
         );
+        parcel.parcelStatus = ParcelStatus.접수;
 
         parcel.deliveryFee = calculateFee(parcel);
         parcel.expectedDeliveryDates = calculateExpectedDeliveryDays(parcel.deliveryType);
-        parcel.addHistory(ParcelStatus.없음, ParcelStatus.접수, registeredDate);
+        addHistory(parcel, ParcelStatus.없음, ParcelStatus.접수, registeredDate);
 
         parcels[parcelCount] = parcel;
         parcelCount++;
@@ -183,7 +185,7 @@ public class Ch06Methods {
             return;
         }
 
-        parcel.addHistory(ParcelStatus.접수, ParcelStatus.출고, readLine("출고일: "));
+        addHistory(parcel, ParcelStatus.접수, ParcelStatus.출고, readLine("출고일: "));
         parcel.parcelStatus = ParcelStatus.출고;
         System.out.println("출고 처리했습니다.");
     }
@@ -205,7 +207,7 @@ public class Ch06Methods {
             return;
         }
 
-        parcel.addHistory(ParcelStatus.접수, ParcelStatus.취소, readLine("취소일: "));
+        addHistory(parcel, ParcelStatus.접수, ParcelStatus.취소, readLine("취소일: "));
         parcel.parcelStatus = ParcelStatus.취소;
         System.out.println("배송을 취소했습니다.");
     }
@@ -225,9 +227,9 @@ public class Ch06Methods {
         for (int index = 0; index < parcel.historyCount; index++) {
             DeliveryHistory history = parcel.histories[index];
             System.out.println(
-                    history.getHistoryChangedDate() + " / "
-                            + history.getBeforeParcelStatus() + " → "
-                            + history.getAfterParcelStatus()
+                    history.historyChangedDate + " / "
+                            + history.beforeParcelStatus + " → "
+                            + history.afterParcelStatus
             );
         }
     }
@@ -244,6 +246,22 @@ public class Ch06Methods {
         }
 
         return null;
+    }
+
+    // ========== CH06 메서드 분리 3단계 ==========
+    // 접수·출고·취소에 반복된 배송 이력 생성 코드를 static 메서드로 분리한다.
+    // =================================
+    // 택배의 배송 이력 배열에 한 건을 추가한다.
+    static void addHistory(Parcel parcel, ParcelStatus beforeParcelStatus,
+                           ParcelStatus afterParcelStatus, String historyChangedDate) {
+        DeliveryHistory history = new DeliveryHistory(
+                beforeParcelStatus,
+                afterParcelStatus,
+                historyChangedDate
+        );
+
+        parcel.histories[parcel.historyCount] = history;
+        parcel.historyCount++;
     }
 
     // ========== CH06 메서드 분리 3단계 ==========
@@ -372,10 +390,7 @@ class Parcel {
     DeliveryHistory[] histories = new DeliveryHistory[20];
     int historyCount = 0;
 
-    // ========== CH06 메서드 분리 3단계 ==========
-    // 택배 접수 메서드에 반복된 필드 대입 코드를 Parcel 생성자로 모은다.
-    // =================================
-    // 택배의 기본 정보를 초기화한다.
+    // 택배 접수에 필요한 기본 정보를 받아 객체를 만든다.
     Parcel(String trackingNumber, String receiverName, String receiverPhoneNumber,
            String destination, DeliveryType deliveryType, int weight, String registeredDate) {
         this.trackingNumber = trackingNumber;
@@ -385,45 +400,18 @@ class Parcel {
         this.deliveryType = deliveryType;
         this.weight = weight;
         this.registeredDate = registeredDate;
-        this.parcelStatus = ParcelStatus.접수;
-    }
-
-    // ========== CH06 메서드 분리 3단계 ==========
-    // 접수·출고·취소 코드에 반복된 이력 저장을 Parcel의 addHistory로 모은다.
-    // =================================
-    // 이 택배의 상태 변경 이력을 추가한다.
-    void addHistory(ParcelStatus beforeParcelStatus, ParcelStatus afterParcelStatus, String historyChangedDate) {
-        histories[historyCount] = new DeliveryHistory(beforeParcelStatus, afterParcelStatus, historyChangedDate);
-        historyCount++;
     }
 }
 
 // 택배 상태가 바뀐 시점을 기록하는 클래스다.
 class DeliveryHistory {
-    private ParcelStatus beforeParcelStatus;
-    private ParcelStatus afterParcelStatus;
-    private String historyChangedDate;
+    ParcelStatus beforeParcelStatus;
+    ParcelStatus afterParcelStatus;
+    String historyChangedDate;
 
-    // ========== CH06 메서드 분리 3단계 ==========
-    // 배송 이력 필드 대입 코드를 DeliveryHistory 생성자로 모은다.
-    // =================================
-    // 배송 이력 한 건을 초기화한다.
-    // 변경 전 상태를 반환한다.
-    ParcelStatus getBeforeParcelStatus() {
-        return beforeParcelStatus;
-    }
-
-    // 변경 후 상태를 반환한다.
-    ParcelStatus getAfterParcelStatus() {
-        return afterParcelStatus;
-    }
-
-    // 변경 날짜를 반환한다.
-    String getHistoryChangedDate() {
-        return historyChangedDate;
-    }
-
-    DeliveryHistory(ParcelStatus beforeParcelStatus, ParcelStatus afterParcelStatus, String historyChangedDate) {
+    // 상태 변경 전후와 변경일을 받아 배송 이력 한 건을 만든다.
+    DeliveryHistory(ParcelStatus beforeParcelStatus, ParcelStatus afterParcelStatus,
+                    String historyChangedDate) {
         this.beforeParcelStatus = beforeParcelStatus;
         this.afterParcelStatus = afterParcelStatus;
         this.historyChangedDate = historyChangedDate;

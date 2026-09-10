@@ -257,8 +257,13 @@ class Parcel {
     }
 
     // 택배 무게를 저장한다. 20kg을 넘으면 택배를 만들 수 없다.
-    void setWeight(int weight) {
+    boolean setWeight(int weight) {
+        if (weight > MAXIMUM_WEIGHT) {
+            return false;
+        }
+
         this.weight = weight;
+        return true;
     }
 
     // 상태 변경 이력을 추가한다.
