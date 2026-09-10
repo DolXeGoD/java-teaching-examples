@@ -6,6 +6,7 @@
 Ch05Arrays.java          병렬 배열 기반 V1
 Ch06Classes.java         메서드 없이 택배와 배송 이력을 객체로 전환
 Ch06Methods.java         객체를 유지한 채 기능별 메서드로 분리
+Ch06AdvancedClass.java   생성자 오버로딩, final, getter/setter와 무게 검증 적용
 Ch07Inheritance.java     배송 종류별 계산을 상속으로 분리
 Ch08Repository.java      업무 처리와 저장 기능 분리
 Ch11Exceptions.java      예외 처리 적용

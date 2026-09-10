@@ -225,9 +225,9 @@ public class Ch06Methods {
         for (int index = 0; index < parcel.historyCount; index++) {
             DeliveryHistory history = parcel.histories[index];
             System.out.println(
-                    history.historyChangedDate + " / "
-                            + history.beforeParcelStatus + " → "
-                            + history.afterParcelStatus
+                    history.getHistoryChangedDate() + " / "
+                            + history.getBeforeParcelStatus() + " → "
+                            + history.getAfterParcelStatus()
             );
         }
     }
@@ -294,7 +294,11 @@ public class Ch06Methods {
     // =================================
     // 배송 종류별 예상 도착 일수를 계산한다.
     static int calculateExpectedDeliveryDays(DeliveryType deliveryType) {
-        if (deliveryType == DeliveryType.특급 || deliveryType == DeliveryType.냉장) {
+        if (deliveryType == DeliveryType.특급) {
+            return 1;
+        }
+
+        if (deliveryType == DeliveryType.냉장) {
             return 1;
         }
 
@@ -338,13 +342,8 @@ public class Ch06Methods {
     // =================================
     // 정수 입력을 받을 때까지 반복한다.
     static int readInt(String message) {
-        while (true) {
-            try {
-                return Integer.parseInt(readLine(message));
-            } catch (NumberFormatException exception) {
-                System.out.println("숫자를 입력하세요.");
-            }
-        }
+        System.out.print(message);
+        return Integer.parseInt(scanner.nextLine());
     }
 
     // ========== CH06 메서드 분리 4단계 ==========
@@ -401,14 +400,29 @@ class Parcel {
 
 // 택배 상태가 바뀐 시점을 기록하는 클래스다.
 class DeliveryHistory {
-    ParcelStatus beforeParcelStatus;
-    ParcelStatus afterParcelStatus;
-    String historyChangedDate;
+    private ParcelStatus beforeParcelStatus;
+    private ParcelStatus afterParcelStatus;
+    private String historyChangedDate;
 
     // ========== CH06 메서드 분리 3단계 ==========
     // 배송 이력 필드 대입 코드를 DeliveryHistory 생성자로 모은다.
     // =================================
     // 배송 이력 한 건을 초기화한다.
+    // 변경 전 상태를 반환한다.
+    ParcelStatus getBeforeParcelStatus() {
+        return beforeParcelStatus;
+    }
+
+    // 변경 후 상태를 반환한다.
+    ParcelStatus getAfterParcelStatus() {
+        return afterParcelStatus;
+    }
+
+    // 변경 날짜를 반환한다.
+    String getHistoryChangedDate() {
+        return historyChangedDate;
+    }
+
     DeliveryHistory(ParcelStatus beforeParcelStatus, ParcelStatus afterParcelStatus, String historyChangedDate) {
         this.beforeParcelStatus = beforeParcelStatus;
         this.afterParcelStatus = afterParcelStatus;

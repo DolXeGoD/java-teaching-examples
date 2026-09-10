@@ -38,8 +38,7 @@ public class Ch06Classes {
             System.out.println("=====================================");
             System.out.print("메뉴 선택: ");
 
-            int menu = scanner.nextInt();
-            scanner.nextLine();
+            int menu = Integer.parseInt(scanner.nextLine());
 
             switch (menu) {
                 case 1: {
@@ -71,8 +70,7 @@ public class Ch06Classes {
                     System.out.print("배송 지역: ");
                     String destination = scanner.nextLine();
                     System.out.print("무게(kg): ");
-                    int weight = scanner.nextInt();
-                    scanner.nextLine();
+                    int weight = Integer.parseInt(scanner.nextLine());
                     System.out.print("배송 종류(일반/특급/냉장/해외): ");
                     String deliveryTypeString = scanner.nextLine();
                     DeliveryType deliveryType = null;
@@ -111,7 +109,9 @@ public class Ch06Classes {
                     }
 
                     int expectedDeliveryDates = 3;
-                    if (deliveryType == DeliveryType.특급 || deliveryType == DeliveryType.냉장) {
+                    if (deliveryType == DeliveryType.특급) {
+                        expectedDeliveryDates = 1;
+                    } else if (deliveryType == DeliveryType.냉장) {
                         expectedDeliveryDates = 1;
                     } else if (deliveryType == DeliveryType.해외) {
                         expectedDeliveryDates = 7;

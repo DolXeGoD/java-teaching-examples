@@ -136,7 +136,9 @@ public class Ch05Arrays {
                     }
 
                     int expectedDays = 3;
-                    if (deliveryType == DeliveryType.특급 || deliveryType == DeliveryType.냉장) {
+                    if (deliveryType == DeliveryType.특급) {
+                        expectedDays = 1;
+                    } else if (deliveryType == DeliveryType.냉장) {
                         expectedDays = 1;
                     } else if (deliveryType == DeliveryType.해외) {
                         expectedDays = 7;

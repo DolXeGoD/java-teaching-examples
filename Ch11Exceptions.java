@@ -37,6 +37,13 @@ class ParcelService {
         this.parcelRepository = parcelRepository;
     }
 
+    // 간편 접수는 일반 배송과 1kg을 기본값으로 사용한다.
+    void registerSimple(String trackingNumber, String receiverName, String receiverPhoneNumber,
+                        String destination, String registeredDate) throws ParcelException {
+        register(trackingNumber, receiverName, receiverPhoneNumber, destination,
+                1, "일반", registeredDate);
+    }
+
     // 새 택배를 접수하고 최초 이력을 남긴다.
     void register(String trackingNumber, String receiverName, String receiverPhoneNumber,
                   String destination, int weight, String deliveryType, String registeredDate)
@@ -45,12 +52,16 @@ class ParcelService {
             throw new ParcelException("이미 사용 중인 운송장 번호입니다.");
         }
 
+        if (weight > Parcel.MAXIMUM_WEIGHT) {
+            throw new ParcelException("택배 무게는 20kg을 넘을 수 없습니다.");
+        }
+
         Parcel parcel = createParcel(trackingNumber, receiverName, receiverPhoneNumber,
                 destination, weight, deliveryType, registeredDate);
         parcel.addHistory(ParcelStatus.없음, ParcelStatus.접수, registeredDate);
         parcelRepository.save(parcel);
 
-        System.out.println("택배 접수: " + parcel.trackingNumber);
+        System.out.println("택배 접수: " + parcel.getTrackingNumber());
     }
 
     // 접수 상태의 택배를 출고 또는 취소 상태로 바꾼다.
@@ -58,14 +69,14 @@ class ParcelService {
             throws ParcelException {
         Parcel parcel = findParcel(trackingNumber);
 
-        if (parcel.parcelStatus != ParcelStatus.접수) {
+        if (parcel.getParcelStatus() != ParcelStatus.접수) {
             throw new ParcelException("접수 상태의 택배만 처리할 수 있습니다.");
         }
 
-        parcel.addHistory(parcel.parcelStatus, afterParcelStatus, historyChangedDate);
-        parcel.parcelStatus = afterParcelStatus;
+        parcel.addHistory(parcel.getParcelStatus(), afterParcelStatus, historyChangedDate);
+        parcel.setParcelStatus(afterParcelStatus);
         parcelRepository.save(parcel);
-        System.out.println(afterParcelStatus + " 처리: " + parcel.trackingNumber);
+        System.out.println(afterParcelStatus + " 처리: " + parcel.getTrackingNumber());
     }
 
     // 운송장 번호로 택배를 찾고 없으면 예외를 발생시킨다.
@@ -125,7 +136,7 @@ class MemoryParcelRepository implements ParcelRepository {
 
     // 새 택배만 배열에 추가한다.
     public void save(Parcel parcel) {
-        if (findByTrackingNumber(parcel.trackingNumber) == null) {
+        if (findByTrackingNumber(parcel.getTrackingNumber()) == null) {
             parcels[count] = parcel;
             count++;
         }
@@ -134,7 +145,7 @@ class MemoryParcelRepository implements ParcelRepository {
     // 배열에서 운송장 번호가 같은 택배를 찾는다.
     public Parcel findByTrackingNumber(String trackingNumber) {
         for (int index = 0; index < count; index++) {
-            if (parcels[index].trackingNumber.equals(trackingNumber)) {
+            if (parcels[index].getTrackingNumber().equals(trackingNumber)) {
                 return parcels[index];
             }
         }
@@ -144,15 +155,22 @@ class MemoryParcelRepository implements ParcelRepository {
 
 // 배송 종류가 공유하는 기본 정보와 기능을 가진 부모 클래스다.
 abstract class Parcel {
-    String trackingNumber;
-    String receiverName;
-    String receiverPhoneNumber;
-    String destination;
-    int weight;
-    ParcelStatus parcelStatus = ParcelStatus.접수;
-    String registeredDate;
-    DeliveryHistory[] histories = new DeliveryHistory[20];
-    int historyCount = 0;
+    // ========== CH06 캡슐화 유지 ==========
+    // 이후 챕터에서도 운송장 번호와 접수일은 바꾸지 않고, 배송비 규칙은 상수로 관리한다.
+    // =================================
+    static final int MAXIMUM_WEIGHT = 20;
+    private static final int BASIC_DELIVERY_FEE = 3000;
+    private static final int HEAVY_PARCEL_SURCHARGE = 2000;
+    private static final int JEJU_SURCHARGE = 3000;
+    private final String trackingNumber;
+    private String receiverName;
+    private String receiverPhoneNumber;
+    private String destination;
+    private int weight;
+    private ParcelStatus parcelStatus = ParcelStatus.접수;
+    private final String registeredDate;
+    private DeliveryHistory[] histories = new DeliveryHistory[20];
+    private int historyCount = 0;
 
     // 배송 종류가 공통으로 사용하는 정보를 초기화한다.
     Parcel(String trackingNumber, String receiverName, String receiverPhoneNumber,
@@ -161,7 +179,7 @@ abstract class Parcel {
         this.receiverName = receiverName;
         this.receiverPhoneNumber = receiverPhoneNumber;
         this.destination = destination;
-        this.weight = weight;
+        setWeight(weight);
         this.registeredDate = registeredDate;
     }
 
@@ -169,6 +187,61 @@ abstract class Parcel {
     void addHistory(ParcelStatus beforeParcelStatus, ParcelStatus afterParcelStatus, String historyChangedDate) {
         histories[historyCount] = new DeliveryHistory(beforeParcelStatus, afterParcelStatus, historyChangedDate);
         historyCount++;
+    }
+
+    // 운송장 번호를 반환한다.
+    String getTrackingNumber() {
+        return trackingNumber;
+    }
+
+    // 수령인 이름을 반환한다.
+    String getReceiverName() {
+        return receiverName;
+    }
+
+    // 수령인 연락처를 반환한다.
+    String getReceiverPhoneNumber() {
+        return receiverPhoneNumber;
+    }
+
+    // 배송 지역을 반환한다.
+    String getDestination() {
+        return destination;
+    }
+
+    // 택배 무게를 반환한다.
+    int getWeight() {
+        return weight;
+    }
+
+    // 현재 배송 상태를 반환한다.
+    ParcelStatus getParcelStatus() {
+        return parcelStatus;
+    }
+
+    // 업무 처리 결과에 따라 배송 상태를 바꾼다.
+    void setParcelStatus(ParcelStatus parcelStatus) {
+        this.parcelStatus = parcelStatus;
+    }
+
+    // 접수일을 반환한다.
+    String getRegisteredDate() {
+        return registeredDate;
+    }
+
+    // 택배 무게를 저장한다. 20kg을 넘으면 택배를 만들 수 없다.
+    void setWeight(int weight) {
+        this.weight = weight;
+    }
+
+    // 배송 이력 배열을 반환한다.
+    DeliveryHistory[] getHistories() {
+        return histories;
+    }
+
+    // 저장된 배송 이력 개수를 반환한다.
+    int getHistoryCount() {
+        return historyCount;
     }
 
     // 배송 종류별 배송비 계산을 자식 클래스에 맡긴다.
@@ -182,12 +255,12 @@ abstract class Parcel {
 
     // 지역과 무게에 따른 공통 기본 배송비를 계산한다.
     int calculateBaseFee() {
-        int deliveryFee = 3000;
+        int deliveryFee = BASIC_DELIVERY_FEE;
         if (weight >= 3) {
-            deliveryFee += 2000;
+            deliveryFee += HEAVY_PARCEL_SURCHARGE;
         }
         if (destination.equals("제주")) {
-            deliveryFee += 3000;
+            deliveryFee += JEJU_SURCHARGE;
         }
         return deliveryFee;
     }
@@ -195,6 +268,12 @@ abstract class Parcel {
 
 // 일반 배송 규칙을 가진 클래스다.
 class NormalParcel extends Parcel {
+    // 간편 접수는 일반 배송과 1kg을 기본값으로 사용한다.
+    NormalParcel(String trackingNumber, String receiverName, String receiverPhoneNumber,
+                 String destination, String registeredDate) {
+        this(trackingNumber, receiverName, receiverPhoneNumber, destination, 1, registeredDate);
+    }
+
     // 일반 배송 택배를 초기화한다.
     NormalParcel(String trackingNumber, String receiverName, String receiverPhoneNumber,
                  String destination, int weight, String registeredDate) {
@@ -291,11 +370,26 @@ class OverseasParcel extends Parcel {
 
 // 택배 상태가 바뀐 시점을 기록하는 클래스다.
 class DeliveryHistory {
-    ParcelStatus beforeParcelStatus;
-    ParcelStatus afterParcelStatus;
-    String historyChangedDate;
+    private ParcelStatus beforeParcelStatus;
+    private ParcelStatus afterParcelStatus;
+    private String historyChangedDate;
 
     // 배송 이력 한 건을 초기화한다.
+    // 변경 전 상태를 반환한다.
+    ParcelStatus getBeforeParcelStatus() {
+        return beforeParcelStatus;
+    }
+
+    // 변경 후 상태를 반환한다.
+    ParcelStatus getAfterParcelStatus() {
+        return afterParcelStatus;
+    }
+
+    // 변경 날짜를 반환한다.
+    String getHistoryChangedDate() {
+        return historyChangedDate;
+    }
+
     DeliveryHistory(ParcelStatus beforeParcelStatus, ParcelStatus afterParcelStatus, String historyChangedDate) {
         this.beforeParcelStatus = beforeParcelStatus;
         this.afterParcelStatus = afterParcelStatus;

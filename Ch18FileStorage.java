@@ -20,9 +20,16 @@ public class Ch18FileStorage {
     // 파일 저장소가 프로그램 재실행 뒤에도 데이터를 읽는지 확인한다.
     public static void main(String[] args) {
         try {
-            ParcelService parcelService = new ParcelService(new FileParcelRepository());
-            parcelService.register("1001", "홍길동", "010-1111-2222", "서울", 2, "일반");
-            parcelService.changeStatus("1001", ParcelStatus.출고);
+            FileParcelRepository parcelRepository = new FileParcelRepository();
+            ParcelService parcelService = new ParcelService(parcelRepository);
+
+            if (parcelRepository.findByTrackingNumber("1001") == null) {
+                parcelService.register("1001", "홍길동", "010-1111-2222", "서울", 2, "일반");
+                parcelService.changeStatus("1001", ParcelStatus.출고);
+            } else {
+                System.out.println("기존 파일 데이터를 읽었습니다.");
+            }
+
             parcelService.printAllParcels();
         } catch (ParcelException | IOException exception) {
             System.out.println(exception.getMessage());
@@ -39,6 +46,12 @@ class ParcelService {
         this.parcelRepository = parcelRepository;
     }
 
+    // 간편 접수는 일반 배송과 1kg을 기본값으로 사용한다.
+    void registerSimple(String trackingNumber, String receiverName, String receiverPhoneNumber,
+                        String destination) throws ParcelException, IOException {
+        register(trackingNumber, receiverName, receiverPhoneNumber, destination, 1, "일반");
+    }
+
     // 새 택배를 접수하고 파일 저장소에 저장한다.
     void register(String trackingNumber, String receiverName, String receiverPhoneNumber,
                   String destination, int weight, String deliveryType)
@@ -47,9 +60,13 @@ class ParcelService {
             throw new ParcelException("이미 사용 중인 운송장 번호입니다.");
         }
 
+        if (weight > Parcel.MAXIMUM_WEIGHT) {
+            throw new ParcelException("택배 무게는 20kg을 넘을 수 없습니다.");
+        }
+
         Parcel parcel = createParcel(trackingNumber, receiverName, receiverPhoneNumber,
                 destination, weight, deliveryType, LocalDate.now());
-        parcel.expectedDeliveryDate = parcel.registeredDate.plusDays(parcel.getExpectedDeliveryDays());
+        parcel.setExpectedDeliveryDate(parcel.getRegisteredDate().plusDays(parcel.getExpectedDeliveryDays()));
         parcel.addHistory(ParcelStatus.없음, ParcelStatus.접수);
         parcelRepository.save(parcel);
     }
@@ -58,20 +75,20 @@ class ParcelService {
     void changeStatus(String trackingNumber, ParcelStatus afterParcelStatus)
             throws ParcelException, IOException {
         Parcel parcel = findParcel(trackingNumber);
-        if (parcel.parcelStatus != ParcelStatus.접수) {
+        if (parcel.getParcelStatus() != ParcelStatus.접수) {
             throw new ParcelException("접수 상태의 택배만 처리할 수 있습니다.");
         }
 
-        parcel.addHistory(parcel.parcelStatus, afterParcelStatus);
-        parcel.parcelStatus = afterParcelStatus;
+        parcel.addHistory(parcel.getParcelStatus(), afterParcelStatus);
+        parcel.setParcelStatus(afterParcelStatus);
         parcelRepository.save(parcel);
     }
 
     // 저장된 모든 택배의 요약 정보를 출력한다.
     void printAllParcels() throws IOException {
         for (Parcel parcel : parcelRepository.findAll()) {
-            System.out.println(parcel.trackingNumber + " / " + parcel.receiverName
-                    + " / " + parcel.getDeliveryType() + " / " + parcel.parcelStatus);
+            System.out.println(parcel.getTrackingNumber() + " / " + parcel.getReceiverName()
+                    + " / " + parcel.getDeliveryType() + " / " + parcel.getParcelStatus());
         }
     }
 
@@ -141,9 +158,9 @@ class FileParcelRepository implements ParcelRepository {
 
     // 택배를 메모리에 반영한 뒤 두 파일에 다시 저장한다.
     public void save(Parcel parcel) throws IOException {
-        if (!parcelMap.containsKey(parcel.trackingNumber)) {
+        if (!parcelMap.containsKey(parcel.getTrackingNumber())) {
             parcelList.add(parcel);
-            parcelMap.put(parcel.trackingNumber, parcel);
+            parcelMap.put(parcel.getTrackingNumber(), parcel);
         }
         writeAll();
     }
@@ -172,10 +189,10 @@ class FileParcelRepository implements ParcelRepository {
 
                 Parcel parcel = createParcel(values[0], values[1], values[2], values[3],
                         Integer.parseInt(values[4]), values[5], LocalDate.parse(values[7]));
-                parcel.parcelStatus = ParcelStatus.valueOf(values[6]);
-                parcel.expectedDeliveryDate = LocalDate.parse(values[8]);
+                parcel.setParcelStatus(ParcelStatus.valueOf(values[6]));
+                parcel.setExpectedDeliveryDate(LocalDate.parse(values[8]));
                 parcelList.add(parcel);
-                parcelMap.put(parcel.trackingNumber, parcel);
+                parcelMap.put(parcel.getTrackingNumber(), parcel);
             }
         }
 
@@ -188,7 +205,7 @@ class FileParcelRepository implements ParcelRepository {
 
                 Parcel parcel = parcelMap.get(values[0]);
                 if (parcel != null) {
-                    parcel.histories.add(new DeliveryHistory(ParcelStatus.valueOf(values[1]), ParcelStatus.valueOf(values[2]),
+                    parcel.getHistories().add(new DeliveryHistory(ParcelStatus.valueOf(values[1]), ParcelStatus.valueOf(values[2]),
                             LocalDateTime.parse(values[3])));
                 }
             }
@@ -205,24 +222,24 @@ class FileParcelRepository implements ParcelRepository {
 
         for (Parcel parcel : parcelList) {
             parcelLines.add(String.join("\t",
-                    parcel.trackingNumber,
-                    parcel.receiverName,
-                    parcel.receiverPhoneNumber,
-                    parcel.destination,
-                    String.valueOf(parcel.weight),
+                    parcel.getTrackingNumber(),
+                    parcel.getReceiverName(),
+                    parcel.getReceiverPhoneNumber(),
+                    parcel.getDestination(),
+                    String.valueOf(parcel.getWeight()),
                     parcel.getDeliveryType(),
-                    parcel.parcelStatus.toString(),
-                    parcel.registeredDate.toString(),
-                    parcel.expectedDeliveryDate.toString(),
+                    parcel.getParcelStatus().toString(),
+                    parcel.getRegisteredDate().toString(),
+                    parcel.getExpectedDeliveryDate().toString(),
                     String.valueOf(parcel.calculateFee())
             ));
 
-            for (DeliveryHistory history : parcel.histories) {
+            for (DeliveryHistory history : parcel.getHistories()) {
                 historyLines.add(String.join("\t",
-                        parcel.trackingNumber,
-                        history.beforeParcelStatus.toString(),
-                        history.afterParcelStatus.toString(),
-                        history.changedAt.toString()
+                        parcel.getTrackingNumber(),
+                        history.getBeforeParcelStatus().toString(),
+                        history.getAfterParcelStatus().toString(),
+                        history.getChangedAt().toString()
                 ));
             }
         }
@@ -269,15 +286,22 @@ class ParcelException extends Exception {
 
 // 배송 종류가 공유하는 정보와 배송 이력을 가진 부모 클래스다.
 abstract class Parcel {
-    String trackingNumber;
-    String receiverName;
-    String receiverPhoneNumber;
-    String destination;
-    int weight;
-    ParcelStatus parcelStatus = ParcelStatus.접수;
-    LocalDate registeredDate;
-    LocalDate expectedDeliveryDate;
-    List<DeliveryHistory> histories = new ArrayList<>();
+    // ========== CH06 캡슐화 유지 ==========
+    // 이후 챕터에서도 운송장 번호와 접수일은 바꾸지 않고, 배송비 규칙은 상수로 관리한다.
+    // =================================
+    static final int MAXIMUM_WEIGHT = 20;
+    private static final int BASIC_DELIVERY_FEE = 3000;
+    private static final int HEAVY_PARCEL_SURCHARGE = 2000;
+    private static final int JEJU_SURCHARGE = 3000;
+    private final String trackingNumber;
+    private String receiverName;
+    private String receiverPhoneNumber;
+    private String destination;
+    private int weight;
+    private ParcelStatus parcelStatus = ParcelStatus.접수;
+    private final LocalDate registeredDate;
+    private LocalDate expectedDeliveryDate;
+    private List<DeliveryHistory> histories = new ArrayList<>();
 
     // 공통 택배 정보를 초기화한다.
     Parcel(String trackingNumber, String receiverName, String receiverPhoneNumber,
@@ -286,13 +310,73 @@ abstract class Parcel {
         this.receiverName = receiverName;
         this.receiverPhoneNumber = receiverPhoneNumber;
         this.destination = destination;
-        this.weight = weight;
+        setWeight(weight);
         this.registeredDate = registeredDate;
     }
 
     // 상태 변경 이력을 목록에 추가한다.
     void addHistory(ParcelStatus beforeParcelStatus, ParcelStatus afterParcelStatus) {
         histories.add(new DeliveryHistory(beforeParcelStatus, afterParcelStatus, LocalDateTime.now()));
+    }
+
+    // 운송장 번호를 반환한다.
+    String getTrackingNumber() {
+        return trackingNumber;
+    }
+
+    // 수령인 이름을 반환한다.
+    String getReceiverName() {
+        return receiverName;
+    }
+
+    // 수령인 연락처를 반환한다.
+    String getReceiverPhoneNumber() {
+        return receiverPhoneNumber;
+    }
+
+    // 배송 지역을 반환한다.
+    String getDestination() {
+        return destination;
+    }
+
+    // 택배 무게를 반환한다.
+    int getWeight() {
+        return weight;
+    }
+
+    // 현재 배송 상태를 반환한다.
+    ParcelStatus getParcelStatus() {
+        return parcelStatus;
+    }
+
+    // 업무 처리 결과에 따라 배송 상태를 바꾼다.
+    void setParcelStatus(ParcelStatus parcelStatus) {
+        this.parcelStatus = parcelStatus;
+    }
+
+    // 접수일을 반환한다.
+    LocalDate getRegisteredDate() {
+        return registeredDate;
+    }
+
+    // 예상 도착일을 반환한다.
+    LocalDate getExpectedDeliveryDate() {
+        return expectedDeliveryDate;
+    }
+
+    // 예상 도착일을 저장한다.
+    void setExpectedDeliveryDate(LocalDate expectedDeliveryDate) {
+        this.expectedDeliveryDate = expectedDeliveryDate;
+    }
+
+    // 택배 무게를 저장한다. 20kg을 넘으면 택배를 만들 수 없다.
+    void setWeight(int weight) {
+        this.weight = weight;
+    }
+
+    // 배송 이력 목록을 반환한다.
+    List<DeliveryHistory> getHistories() {
+        return histories;
     }
 
     // 배송 종류별 배송비 계산을 자식 클래스에 맡긴다.
@@ -306,12 +390,12 @@ abstract class Parcel {
 
     // 지역과 무게에 따른 공통 기본 배송비를 계산한다.
     int calculateBaseFee() {
-        int deliveryFee = 3000;
+        int deliveryFee = BASIC_DELIVERY_FEE;
         if (weight >= 3) {
-            deliveryFee += 2000;
+            deliveryFee += HEAVY_PARCEL_SURCHARGE;
         }
         if (destination.equals("제주")) {
-            deliveryFee += 3000;
+            deliveryFee += JEJU_SURCHARGE;
         }
         return deliveryFee;
     }
@@ -319,6 +403,12 @@ abstract class Parcel {
 
 // 일반 배송 규칙을 가진 클래스다.
 class NormalParcel extends Parcel {
+    // 간편 접수는 일반 배송과 1kg을 기본값으로 사용한다.
+    NormalParcel(String trackingNumber, String receiverName, String receiverPhoneNumber,
+                 String destination, LocalDate registeredDate) {
+        this(trackingNumber, receiverName, receiverPhoneNumber, destination, 1, registeredDate);
+    }
+
     // 일반 배송 택배를 초기화한다.
     NormalParcel(String trackingNumber, String receiverName, String receiverPhoneNumber,
                  String destination, int weight, LocalDate registeredDate) {
@@ -403,11 +493,26 @@ class OverseasParcel extends Parcel {
 
 // 상태 변경 시각까지 보관하는 배송 이력 클래스다.
 class DeliveryHistory {
-    ParcelStatus beforeParcelStatus;
-    ParcelStatus afterParcelStatus;
-    LocalDateTime changedAt;
+    private ParcelStatus beforeParcelStatus;
+    private ParcelStatus afterParcelStatus;
+    private LocalDateTime changedAt;
 
     // 배송 이력 한 건을 초기화한다.
+    // 변경 전 상태를 반환한다.
+    ParcelStatus getBeforeParcelStatus() {
+        return beforeParcelStatus;
+    }
+
+    // 변경 후 상태를 반환한다.
+    ParcelStatus getAfterParcelStatus() {
+        return afterParcelStatus;
+    }
+
+    // 변경 시각을 반환한다.
+    LocalDateTime getChangedAt() {
+        return changedAt;
+    }
+
     DeliveryHistory(ParcelStatus beforeParcelStatus, ParcelStatus afterParcelStatus, LocalDateTime changedAt) {
         this.beforeParcelStatus = beforeParcelStatus;
         this.afterParcelStatus = afterParcelStatus;
