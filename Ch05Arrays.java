@@ -12,34 +12,46 @@ enum DeliveryType {
 enum ParcelStatus {
     접수,
     출고,
-    취소
+    취소,
+    없음
 }
 
 public class Ch05Arrays {
     // Ch05 V1: 아직 사용자 정의 메서드를 만들지 않고 main 안에서 모든 기능을 처리한다.
     public static void main(String[] args) {
-        // 키보드로 입력한 값을 읽는 객체다.
+        // 1. 운송장 번호
+        String[] trackingNumbers = new String[100];
+        // 2. 수령인 이름
+        String[] receiverNames = new String[100];
+        // 3. 수령인 연락처
+        String[] receiverPhoneNumbers = new String[100];
+        // 4. 배송 지역
+        String[] destinations = new String[100];
+        // 5. 배송 종류
+        DeliveryType[] deliveryTypes = new DeliveryType[100];
+        // 6. 택배 무게
+        int[] weights = new int[100];
+        // 7. 계산된 배송비
+        int[] fees = new int[100];
+        // 8. 현재 배송 상태
+        ParcelStatus[] parcelStatus = new ParcelStatus[100];
+        // 9. 택배 접수일
+        String[] registeredDates = new String[100];
+        // 10. 예상 배송 소요일
+        int[] expectedDeliveryDates = new int[100];
+        int parcelCount = 0;
+
+        // 11. 이력이 남은 택배의 운송장 번호
+        String[] historyTrackingNumbers = new String[500];
+        // 12. 변경 전 상태
+        ParcelStatus[] beforeParcelStatus = new ParcelStatus[500];
+        // 13. 변경 후 상태
+        ParcelStatus[] afterParcelStatus = new ParcelStatus[500];
+        // 14. 변경 날짜
+        String[] historyChangedDates = new String[500];
+        int historyCount = 0;
+
         Scanner scanner = new Scanner(System.in);
-
-        // 택배 정보를 같은 인덱스로 관리하는 병렬 배열이다.
-        String[] trackingNumbers = new String[100]; // 운송장 번호
-        String[] receiverNames = new String[100]; // 수령인 이름
-        String[] receiverPhoneNumbers = new String[100]; // 수령인 연락처
-        String[] destinations = new String[100]; // 배송 지역
-        DeliveryType[] deliveryTypes = new DeliveryType[100]; // 일반, 특급, 냉장, 해외 중 하나인 배송 종류
-        int[] weights = new int[100]; // 택배 무게(kg)
-        int[] fees = new int[100]; // 계산된 배송비
-        ParcelStatus[] statuses = new ParcelStatus[100]; // 접수, 출고, 취소 중 하나인 현재 배송 상태
-        String[] registeredDates = new String[100]; // 택배를 접수한 날짜
-        int[] expectedDeliveryDays = new int[100]; // 예상 배송 소요일
-        int parcelCount = 0; // 현재 접수되어 배열에 저장된 택배 수
-
-        // 배송 이력을 같은 인덱스로 관리하는 병렬 배열이다.
-        String[] historyTrackingNumbers = new String[500]; // 이력이 남은 택배의 운송장 번호
-        String[] beforeStatuses = new String[500]; // 상태가 바뀌기 전의 상태
-        String[] afterStatuses = new String[500]; // 상태가 바뀐 후의 상태
-        String[] changedDates = new String[500]; // 상태를 변경한 날짜
-        int historyCount = 0; // 현재 저장된 배송 이력 수
 
         while (true) {
             System.out.println("\n========== 당일배송 물류센터 ==========");
@@ -53,8 +65,7 @@ public class Ch05Arrays {
             System.out.println("=====================================");
             System.out.print("메뉴 선택: ");
 
-            int menu = scanner.nextInt(); // 사용자가 선택한 메뉴 번호
-            scanner.nextLine();
+            int menu = Integer.parseInt(scanner.nextLine());
 
             switch (menu) {
                 case 1:
@@ -64,42 +75,40 @@ public class Ch05Arrays {
                     }
 
                     System.out.print("운송장 번호: ");
-                    String trackingNumber = scanner.nextLine(); // 새로 접수할 택배의 운송장 번호
-                    boolean duplicated = false; // 같은 운송장 번호가 이미 있는지 확인하는 값
+                    String trackingNumber = scanner.nextLine();
+                    boolean isExistNumber = false;
 
-                    // index는 현재 중복 여부를 확인하는 택배의 배열 위치다.
                     for (int index = 0; index < parcelCount; index++) {
                         if (trackingNumbers[index].equals(trackingNumber)) {
-                            duplicated = true;
+                            isExistNumber = true;
                             break;
                         }
                     }
 
-                    if (duplicated) {
+                    if (isExistNumber) {
                         System.out.println("이미 사용 중인 운송장 번호입니다.");
                         break;
                     }
 
                     System.out.print("수령인 이름: ");
-                    String receiverName = scanner.nextLine(); // 새 택배 수령인의 이름
+                    String receiverName = scanner.nextLine();
                     System.out.print("수령인 연락처: ");
-                    String receiverPhoneNumber = scanner.nextLine(); // 새 택배 수령인의 연락처
+                    String receiverPhoneNumber = scanner.nextLine();
                     System.out.print("배송 지역: ");
-                    String destination = scanner.nextLine(); // 새 택배의 배송 지역
+                    String destination = scanner.nextLine();
                     System.out.print("무게(kg): ");
-                    int weight = scanner.nextInt(); // 새 택배의 무게
-                    scanner.nextLine();
+                    int weight = Integer.parseInt(scanner.nextLine());
                     System.out.print("배송 종류(일반/특급/냉장/해외): ");
-                    String deliveryTypeInput = scanner.nextLine(); // 사용자가 입력한 배송 종류 문자열
-                    DeliveryType deliveryType = null; // 문자열을 바꿔 저장할 배송 종류 enum 값
+                    String deliveryTypeString = scanner.nextLine();
+                    DeliveryType deliveryType = null;
 
-                    if (deliveryTypeInput.equals("일반")) {
+                    if (deliveryTypeString.equals("일반")) {
                         deliveryType = DeliveryType.일반;
-                    } else if (deliveryTypeInput.equals("특급")) {
+                    } else if (deliveryTypeString.equals("특급")) {
                         deliveryType = DeliveryType.특급;
-                    } else if (deliveryTypeInput.equals("냉장")) {
+                    } else if (deliveryTypeString.equals("냉장")) {
                         deliveryType = DeliveryType.냉장;
-                    } else if (deliveryTypeInput.equals("해외")) {
+                    } else if (deliveryTypeString.equals("해외")) {
                         deliveryType = DeliveryType.해외;
                     }
 
@@ -109,24 +118,24 @@ public class Ch05Arrays {
                     }
 
                     System.out.print("접수일(예: 2026-09-01): ");
-                    String registeredDate = scanner.nextLine(); // 새 택배를 접수한 날짜
+                    String registeredDate = scanner.nextLine();
 
-                    int fee = 3000; // 기본 배송비에서 추가 비용을 계산할 변수
+                    int deliveryFee = 3000;
                     if (weight >= 3) {
-                        fee += 2000;
+                        deliveryFee += 2000;
                     }
                     if (destination.equals("제주")) {
-                        fee += 3000;
+                        deliveryFee += 3000;
                     }
                     if (deliveryType == DeliveryType.특급) {
-                        fee += 2000;
+                        deliveryFee += 2000;
                     } else if (deliveryType == DeliveryType.냉장) {
-                        fee += 4000;
+                        deliveryFee += 4000;
                     } else if (deliveryType == DeliveryType.해외) {
-                        fee += 15000;
+                        deliveryFee += 15000;
                     }
 
-                    int expectedDays = 3; // 기본 예상 배송일에서 배송 종류에 따라 변경할 변수
+                    int expectedDays = 3;
                     if (deliveryType == DeliveryType.특급 || deliveryType == DeliveryType.냉장) {
                         expectedDays = 1;
                     } else if (deliveryType == DeliveryType.해외) {
@@ -139,50 +148,50 @@ public class Ch05Arrays {
                     destinations[parcelCount] = destination;
                     deliveryTypes[parcelCount] = deliveryType;
                     weights[parcelCount] = weight;
-                    fees[parcelCount] = fee;
-                    statuses[parcelCount] = ParcelStatus.접수;
+                    fees[parcelCount] = deliveryFee;
+                    parcelStatus[parcelCount] = ParcelStatus.접수;
                     registeredDates[parcelCount] = registeredDate;
-                    expectedDeliveryDays[parcelCount] = expectedDays;
+                    expectedDeliveryDates[parcelCount] = expectedDays;
                     parcelCount++;
 
                     historyTrackingNumbers[historyCount] = trackingNumber;
-                    beforeStatuses[historyCount] = "없음";
-                    afterStatuses[historyCount] = "접수";
-                    changedDates[historyCount] = registeredDate;
+                    beforeParcelStatus[historyCount] = ParcelStatus.없음;
+                    afterParcelStatus[historyCount] = ParcelStatus.접수;
+                    historyChangedDates[historyCount] = registeredDate;
                     historyCount++;
 
-                    System.out.println("택배가 접수되었습니다. 배송비: " + fee + "원");
+                    System.out.println("택배가 접수되었습니다. 배송비: " + deliveryFee + "원");
                     break;
 
-                case 2:
+                case 2: {
                     System.out.print("운송장 번호: ");
-                    trackingNumber = scanner.nextLine(); // 조회할 택배의 운송장 번호
-                    int foundIndex = -1; // 찾은 택배의 배열 위치, 찾지 못하면 -1
+                    String searchTarget = scanner.nextLine();
+                    int targetPosition = -1;
 
-                    // index는 현재 운송장 번호를 비교하는 택배의 배열 위치다.
                     for (int index = 0; index < parcelCount; index++) {
-                        if (trackingNumbers[index].equals(trackingNumber)) {
-                            foundIndex = index;
+                        if (trackingNumbers[index].equals(searchTarget)) {
+                            targetPosition = index;
                             break;
                         }
                     }
 
-                    if (foundIndex == -1) {
+                    if (targetPosition == -1) {
                         System.out.println("존재하지 않는 운송장 번호입니다.");
                         break;
                     }
 
-                    System.out.println("운송장 번호: " + trackingNumbers[foundIndex]);
-                    System.out.println("수령인: " + receiverNames[foundIndex]);
-                    System.out.println("연락처: " + receiverPhoneNumbers[foundIndex]);
-                    System.out.println("배송 지역: " + destinations[foundIndex]);
-                    System.out.println("배송 종류: " + deliveryTypes[foundIndex]);
-                    System.out.println("무게: " + weights[foundIndex] + "kg");
-                    System.out.println("배송비: " + fees[foundIndex] + "원");
-                    System.out.println("상태: " + statuses[foundIndex]);
-                    System.out.println("접수일: " + registeredDates[foundIndex]);
-                    System.out.println("예상 도착: " + expectedDeliveryDays[foundIndex] + "일 후");
+                    System.out.println("운송장 번호: " + trackingNumbers[targetPosition]);
+                    System.out.println("수령인: " + receiverNames[targetPosition]);
+                    System.out.println("연락처: " + receiverPhoneNumbers[targetPosition]);
+                    System.out.println("배송 지역: " + destinations[targetPosition]);
+                    System.out.println("배송 종류: " + deliveryTypes[targetPosition]);
+                    System.out.println("무게: " + weights[targetPosition] + "kg");
+                    System.out.println("배송비: " + fees[targetPosition] + "원");
+                    System.out.println("상태: " + parcelStatus[targetPosition]);
+                    System.out.println("접수일: " + registeredDates[targetPosition]);
+                    System.out.println("예상 도착: " + expectedDeliveryDates[targetPosition] + "일 후");
                     break;
+                }
 
                 case 3:
                     if (parcelCount == 0) {
@@ -190,104 +199,103 @@ public class Ch05Arrays {
                         break;
                     }
 
-                    // index는 현재 출력할 택배의 배열 위치다.
                     for (int index = 0; index < parcelCount; index++) {
                         System.out.println(
                                 trackingNumbers[index] + " / "
                                         + receiverNames[index] + " / "
                                         + deliveryTypes[index] + " / "
-                                        + statuses[index]
+                                        + parcelStatus[index]
                         );
                     }
                     break;
 
-                case 4:
+                case 4: {
                     System.out.print("출고할 운송장 번호: ");
-                    trackingNumber = scanner.nextLine(); // 출고할 택배의 운송장 번호
-                    foundIndex = -1; // 찾은 택배의 배열 위치, 찾지 못하면 -1
+                    String searchTarget = scanner.nextLine();
+                    int targetPosition = -1;
 
-                    // index는 현재 운송장 번호를 비교하는 택배의 배열 위치다.
                     for (int index = 0; index < parcelCount; index++) {
-                        if (trackingNumbers[index].equals(trackingNumber)) {
-                            foundIndex = index;
+                        if (trackingNumbers[index].equals(searchTarget)) {
+                            targetPosition = index;
                             break;
                         }
                     }
 
-                    if (foundIndex == -1) {
+                    if (targetPosition == -1) {
                         System.out.println("존재하지 않는 운송장 번호입니다.");
                         break;
                     }
-                    if (statuses[foundIndex] != ParcelStatus.접수) {
+                    if (parcelStatus[targetPosition] != ParcelStatus.접수) {
                         System.out.println("접수 상태의 택배만 출고할 수 있습니다.");
                         break;
                     }
 
                     System.out.print("출고일: ");
-                    String shippedDate = scanner.nextLine(); // 출고 처리한 날짜
-                    historyTrackingNumbers[historyCount] = trackingNumber;
-                    beforeStatuses[historyCount] = "접수";
-                    afterStatuses[historyCount] = "출고";
-                    changedDates[historyCount] = shippedDate;
+                    String shippedDate = scanner.nextLine();
+                    historyTrackingNumbers[historyCount] = searchTarget;
+                    beforeParcelStatus[historyCount] = ParcelStatus.접수;
+                    afterParcelStatus[historyCount] = ParcelStatus.출고;
+                    historyChangedDates[historyCount] = shippedDate;
                     historyCount++;
-                    statuses[foundIndex] = ParcelStatus.출고;
+                    parcelStatus[targetPosition] = ParcelStatus.출고;
                     System.out.println("출고 처리했습니다.");
                     break;
+                }
 
-                case 5:
+                case 5: {
                     System.out.print("취소할 운송장 번호: ");
-                    trackingNumber = scanner.nextLine(); // 취소할 택배의 운송장 번호
-                    foundIndex = -1; // 찾은 택배의 배열 위치, 찾지 못하면 -1
+                    String searchTarget = scanner.nextLine();
+                    int targetPosition = -1;
 
-                    // index는 현재 운송장 번호를 비교하는 택배의 배열 위치다.
                     for (int index = 0; index < parcelCount; index++) {
-                        if (trackingNumbers[index].equals(trackingNumber)) {
-                            foundIndex = index;
+                        if (trackingNumbers[index].equals(searchTarget)) {
+                            targetPosition = index;
                             break;
                         }
                     }
 
-                    if (foundIndex == -1) {
+                    if (targetPosition == -1) {
                         System.out.println("존재하지 않는 운송장 번호입니다.");
                         break;
                     }
-                    if (statuses[foundIndex] != ParcelStatus.접수) {
+                    if (parcelStatus[targetPosition] != ParcelStatus.접수) {
                         System.out.println("접수 상태의 택배만 취소할 수 있습니다.");
                         break;
                     }
 
                     System.out.print("취소일: ");
-                    String canceledDate = scanner.nextLine(); // 취소 처리한 날짜
-                    historyTrackingNumbers[historyCount] = trackingNumber;
-                    beforeStatuses[historyCount] = "접수";
-                    afterStatuses[historyCount] = "취소";
-                    changedDates[historyCount] = canceledDate;
+                    String canceledDate = scanner.nextLine();
+                    historyTrackingNumbers[historyCount] = searchTarget;
+                    beforeParcelStatus[historyCount] = ParcelStatus.접수;
+                    afterParcelStatus[historyCount] = ParcelStatus.취소;
+                    historyChangedDates[historyCount] = canceledDate;
                     historyCount++;
-                    statuses[foundIndex] = ParcelStatus.취소;
+                    parcelStatus[targetPosition] = ParcelStatus.취소;
                     System.out.println("배송을 취소했습니다.");
                     break;
+                }
 
-                case 6:
+                case 6: {
                     System.out.print("운송장 번호: ");
-                    trackingNumber = scanner.nextLine(); // 이력을 조회할 택배의 운송장 번호
-                    boolean historyFound = false; // 해당 운송장 번호의 이력을 찾았는지 확인하는 값
+                    String searchTarget = scanner.nextLine();
+                    boolean isExistHistory = false;
 
-                    // index는 현재 확인하는 배송 이력의 배열 위치다.
                     for (int index = 0; index < historyCount; index++) {
-                        if (historyTrackingNumbers[index].equals(trackingNumber)) {
+                        if (historyTrackingNumbers[index].equals(searchTarget)) {
                             System.out.println(
-                                    changedDates[index] + " / "
-                                            + beforeStatuses[index] + " → "
-                                            + afterStatuses[index]
+                                    historyChangedDates[index] + " / "
+                                            + beforeParcelStatus[index] + " → "
+                                            + afterParcelStatus[index]
                             );
-                            historyFound = true;
+                            isExistHistory = true;
                         }
                     }
 
-                    if (!historyFound) {
+                    if (!isExistHistory) {
                         System.out.println("배송 이력이 없습니다.");
                     }
                     break;
+                }
 
                 case 0:
                     System.out.println("프로그램을 종료합니다.");

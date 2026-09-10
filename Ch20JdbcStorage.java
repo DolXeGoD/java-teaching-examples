@@ -64,15 +64,15 @@ class ParcelService {
     }
 
     // 접수 상태의 택배를 출고 또는 취소 상태로 바꾼다.
-    void changeStatus(String trackingNumber, ParcelStatus afterStatus)
+    void changeStatus(String trackingNumber, ParcelStatus afterParcelStatus)
             throws ParcelException, SQLException {
         Parcel parcel = findParcel(trackingNumber);
-        if (parcel.status != ParcelStatus.접수) {
+        if (parcel.parcelStatus != ParcelStatus.접수) {
             throw new ParcelException("접수 상태의 택배만 처리할 수 있습니다.");
         }
 
-        parcel.addHistory(parcel.status, afterStatus);
-        parcel.status = afterStatus;
+        parcel.addHistory(parcel.parcelStatus, afterParcelStatus);
+        parcel.parcelStatus = afterParcelStatus;
         parcelRepository.save(parcel);
     }
 
@@ -80,7 +80,7 @@ class ParcelService {
     void printAllParcels() throws SQLException {
         for (Parcel parcel : parcelRepository.findAll()) {
             System.out.println(parcel.trackingNumber + " / " + parcel.receiverName
-                    + " / " + parcel.getDeliveryType() + " / " + parcel.status);
+                    + " / " + parcel.getDeliveryType() + " / " + parcel.parcelStatus);
         }
     }
 
@@ -152,12 +152,12 @@ class JdbcParcelRepository implements ParcelRepository {
     public void save(Parcel parcel) throws SQLException {
         String parcelSql = "INSERT INTO parcels "
                 + "(tracking_number, receiver_name, receiver_phone_number, destination, weight, "
-                + "delivery_type, fee, status, registered_at, expected_delivery_at) "
+                + "delivery_type, deliveryFee, parcelStatus, registered_at, expected_delivery_at) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
                 + "ON DUPLICATE KEY UPDATE receiver_name = VALUES(receiver_name), "
                 + "receiver_phone_number = VALUES(receiver_phone_number), destination = VALUES(destination), "
-                + "weight = VALUES(weight), delivery_type = VALUES(delivery_type), fee = VALUES(fee), "
-                + "status = VALUES(status), registered_at = VALUES(registered_at), "
+                + "weight = VALUES(weight), delivery_type = VALUES(delivery_type), deliveryFee = VALUES(deliveryFee), "
+                + "parcelStatus = VALUES(parcelStatus), registered_at = VALUES(registered_at), "
                 + "expected_delivery_at = VALUES(expected_delivery_at)";
 
         connection.setAutoCommit(false);
@@ -170,7 +170,7 @@ class JdbcParcelRepository implements ParcelRepository {
             parcelStatement.setInt(5, parcel.weight);
             parcelStatement.setString(6, parcel.getDeliveryType());
             parcelStatement.setInt(7, parcel.calculateFee());
-            parcelStatement.setString(8, parcel.status.toString());
+            parcelStatement.setString(8, parcel.parcelStatus.toString());
             parcelStatement.setString(9, parcel.registeredDate.toString());
             parcelStatement.setString(10, parcel.expectedDeliveryDate.toString());
             parcelStatement.executeUpdate();
@@ -239,8 +239,8 @@ class JdbcParcelRepository implements ParcelRepository {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             for (DeliveryHistory history : parcel.histories) {
                 statement.setString(1, parcel.trackingNumber);
-                statement.setString(2, history.beforeStatus.toString());
-                statement.setString(3, history.afterStatus.toString());
+                statement.setString(2, history.beforeParcelStatus.toString());
+                statement.setString(3, history.afterParcelStatus.toString());
                 statement.setString(4, history.changedAt.toString());
                 statement.addBatch();
             }
@@ -273,7 +273,7 @@ class JdbcParcelRepository implements ParcelRepository {
                     destination, weight, registeredDate);
         }
 
-        parcel.status = ParcelStatus.valueOf(resultSet.getString("status"));
+        parcel.parcelStatus = ParcelStatus.valueOf(resultSet.getString("parcelStatus"));
         parcel.expectedDeliveryDate = LocalDate.parse(resultSet.getString("expected_delivery_at"));
         return parcel;
     }
@@ -314,7 +314,7 @@ abstract class Parcel {
     String receiverPhoneNumber;
     String destination;
     int weight;
-    ParcelStatus status = ParcelStatus.접수;
+    ParcelStatus parcelStatus = ParcelStatus.접수;
     LocalDate registeredDate;
     LocalDate expectedDeliveryDate;
     List<DeliveryHistory> histories = new ArrayList<>();
@@ -331,8 +331,8 @@ abstract class Parcel {
     }
 
     // 상태 변경 이력을 목록에 추가한다.
-    void addHistory(ParcelStatus beforeStatus, ParcelStatus afterStatus) {
-        histories.add(new DeliveryHistory(beforeStatus, afterStatus, LocalDateTime.now()));
+    void addHistory(ParcelStatus beforeParcelStatus, ParcelStatus afterParcelStatus) {
+        histories.add(new DeliveryHistory(beforeParcelStatus, afterParcelStatus, LocalDateTime.now()));
     }
 
     // 배송 종류별 배송비 계산을 자식 클래스에 맡긴다.
@@ -346,14 +346,14 @@ abstract class Parcel {
 
     // 지역과 무게에 따른 공통 기본 배송비를 계산한다.
     int calculateBaseFee() {
-        int fee = 3000;
+        int deliveryFee = 3000;
         if (weight >= 3) {
-            fee += 2000;
+            deliveryFee += 2000;
         }
         if (destination.equals("제주")) {
-            fee += 3000;
+            deliveryFee += 3000;
         }
-        return fee;
+        return deliveryFee;
     }
 }
 
@@ -443,14 +443,14 @@ class OverseasParcel extends Parcel {
 
 // 상태 변경 시각까지 보관하는 배송 이력 클래스다.
 class DeliveryHistory {
-    ParcelStatus beforeStatus;
-    ParcelStatus afterStatus;
+    ParcelStatus beforeParcelStatus;
+    ParcelStatus afterParcelStatus;
     LocalDateTime changedAt;
 
     // 배송 이력 한 건을 초기화한다.
-    DeliveryHistory(ParcelStatus beforeStatus, ParcelStatus afterStatus, LocalDateTime changedAt) {
-        this.beforeStatus = beforeStatus;
-        this.afterStatus = afterStatus;
+    DeliveryHistory(ParcelStatus beforeParcelStatus, ParcelStatus afterParcelStatus, LocalDateTime changedAt) {
+        this.beforeParcelStatus = beforeParcelStatus;
+        this.afterParcelStatus = afterParcelStatus;
         this.changedAt = changedAt;
     }
 }

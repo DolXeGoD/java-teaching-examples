@@ -12,7 +12,8 @@ enum DeliveryType {
 enum ParcelStatus {
     접수,
     출고,
-    취소
+    취소,
+    없음
 }
 
 public class Ch06Classes {
@@ -49,16 +50,16 @@ public class Ch06Classes {
 
                     System.out.print("운송장 번호: ");
                     String trackingNumber = scanner.nextLine();
-                    boolean duplicated = false;
+                    boolean isExistNumber = false;
 
                     for (int index = 0; index < parcelCount; index++) {
                         if (parcels[index].trackingNumber.equals(trackingNumber)) {
-                            duplicated = true;
+                            isExistNumber = true;
                             break;
                         }
                     }
 
-                    if (duplicated) {
+                    if (isExistNumber) {
                         System.out.println("이미 사용 중인 운송장 번호입니다.");
                         break;
                     }
@@ -73,16 +74,16 @@ public class Ch06Classes {
                     int weight = scanner.nextInt();
                     scanner.nextLine();
                     System.out.print("배송 종류(일반/특급/냉장/해외): ");
-                    String deliveryTypeInput = scanner.nextLine();
+                    String deliveryTypeString = scanner.nextLine();
                     DeliveryType deliveryType = null;
 
-                    if (deliveryTypeInput.equals("일반")) {
+                    if (deliveryTypeString.equals("일반")) {
                         deliveryType = DeliveryType.일반;
-                    } else if (deliveryTypeInput.equals("특급")) {
+                    } else if (deliveryTypeString.equals("특급")) {
                         deliveryType = DeliveryType.특급;
-                    } else if (deliveryTypeInput.equals("냉장")) {
+                    } else if (deliveryTypeString.equals("냉장")) {
                         deliveryType = DeliveryType.냉장;
-                    } else if (deliveryTypeInput.equals("해외")) {
+                    } else if (deliveryTypeString.equals("해외")) {
                         deliveryType = DeliveryType.해외;
                     }
 
@@ -94,26 +95,26 @@ public class Ch06Classes {
                     System.out.print("접수일(예: 2026-09-01): ");
                     String registeredDate = scanner.nextLine();
 
-                    int fee = 3000;
+                    int deliveryFee = 3000;
                     if (weight >= 3) {
-                        fee += 2000;
+                        deliveryFee += 2000;
                     }
                     if (destination.equals("제주")) {
-                        fee += 3000;
+                        deliveryFee += 3000;
                     }
                     if (deliveryType == DeliveryType.특급) {
-                        fee += 2000;
+                        deliveryFee += 2000;
                     } else if (deliveryType == DeliveryType.냉장) {
-                        fee += 4000;
+                        deliveryFee += 4000;
                     } else if (deliveryType == DeliveryType.해외) {
-                        fee += 15000;
+                        deliveryFee += 15000;
                     }
 
-                    int expectedDeliveryDays = 3;
+                    int expectedDeliveryDates = 3;
                     if (deliveryType == DeliveryType.특급 || deliveryType == DeliveryType.냉장) {
-                        expectedDeliveryDays = 1;
+                        expectedDeliveryDates = 1;
                     } else if (deliveryType == DeliveryType.해외) {
-                        expectedDeliveryDays = 7;
+                        expectedDeliveryDates = 7;
                     }
 
                     // 생성자를 배우기 전이므로 기본 생성자로 객체를 만든 뒤 필드에 값을 넣는다.
@@ -124,53 +125,53 @@ public class Ch06Classes {
                     parcel.destination = destination;
                     parcel.deliveryType = deliveryType;
                     parcel.weight = weight;
-                    parcel.fee = fee;
-                    parcel.status = ParcelStatus.접수;
+                    parcel.deliveryFee = deliveryFee;
+                    parcel.parcelStatus = ParcelStatus.접수;
                     parcel.registeredDate = registeredDate;
-                    parcel.expectedDeliveryDays = expectedDeliveryDays;
+                    parcel.expectedDeliveryDates = expectedDeliveryDates;
 
                     DeliveryHistory history = new DeliveryHistory();
-                    history.beforeStatus = "없음";
-                    history.afterStatus = "접수";
-                    history.changedDate = registeredDate;
+                    history.beforeParcelStatus = ParcelStatus.없음;
+                    history.afterParcelStatus = ParcelStatus.접수;
+                    history.historyChangedDate = registeredDate;
                     parcel.histories[parcel.historyCount] = history;
                     parcel.historyCount++;
 
                     parcels[parcelCount] = parcel;
                     parcelCount++;
 
-                    System.out.println("택배가 접수되었습니다. 배송비: " + parcel.fee + "원");
+                    System.out.println("택배가 접수되었습니다. 배송비: " + parcel.deliveryFee + "원");
                     break;
                 }
 
                 case 2: {
                     System.out.print("운송장 번호: ");
                     String trackingNumber = scanner.nextLine();
-                    int foundIndex = -1;
+                    int targetPosition = -1;
 
                     for (int index = 0; index < parcelCount; index++) {
                         if (parcels[index].trackingNumber.equals(trackingNumber)) {
-                            foundIndex = index;
+                            targetPosition = index;
                             break;
                         }
                     }
 
-                    if (foundIndex == -1) {
+                    if (targetPosition == -1) {
                         System.out.println("존재하지 않는 운송장 번호입니다.");
                         break;
                     }
 
-                    Parcel parcel = parcels[foundIndex];
+                    Parcel parcel = parcels[targetPosition];
                     System.out.println("운송장 번호: " + parcel.trackingNumber);
                     System.out.println("수령인: " + parcel.receiverName);
                     System.out.println("연락처: " + parcel.receiverPhoneNumber);
                     System.out.println("배송 지역: " + parcel.destination);
                     System.out.println("배송 종류: " + parcel.deliveryType);
                     System.out.println("무게: " + parcel.weight + "kg");
-                    System.out.println("배송비: " + parcel.fee + "원");
-                    System.out.println("상태: " + parcel.status);
+                    System.out.println("배송비: " + parcel.deliveryFee + "원");
+                    System.out.println("상태: " + parcel.parcelStatus);
                     System.out.println("접수일: " + parcel.registeredDate);
-                    System.out.println("예상 도착: " + parcel.expectedDeliveryDays + "일 후");
+                    System.out.println("예상 도착: " + parcel.expectedDeliveryDates + "일 후");
                     break;
                 }
 
@@ -186,7 +187,7 @@ public class Ch06Classes {
                                 parcel.trackingNumber + " / "
                                         + parcel.receiverName + " / "
                                         + parcel.deliveryType + " / "
-                                        + parcel.status
+                                        + parcel.parcelStatus
                         );
                     }
                     break;
@@ -195,22 +196,22 @@ public class Ch06Classes {
                 case 4: {
                     System.out.print("출고할 운송장 번호: ");
                     String trackingNumber = scanner.nextLine();
-                    int foundIndex = -1;
+                    int targetPosition = -1;
 
                     for (int index = 0; index < parcelCount; index++) {
                         if (parcels[index].trackingNumber.equals(trackingNumber)) {
-                            foundIndex = index;
+                            targetPosition = index;
                             break;
                         }
                     }
 
-                    if (foundIndex == -1) {
+                    if (targetPosition == -1) {
                         System.out.println("존재하지 않는 운송장 번호입니다.");
                         break;
                     }
 
-                    Parcel parcel = parcels[foundIndex];
-                    if (parcel.status != ParcelStatus.접수) {
+                    Parcel parcel = parcels[targetPosition];
+                    if (parcel.parcelStatus != ParcelStatus.접수) {
                         System.out.println("접수 상태의 택배만 출고할 수 있습니다.");
                         break;
                     }
@@ -219,12 +220,12 @@ public class Ch06Classes {
                     String shippedDate = scanner.nextLine();
 
                     DeliveryHistory history = new DeliveryHistory();
-                    history.beforeStatus = "접수";
-                    history.afterStatus = "출고";
-                    history.changedDate = shippedDate;
+                    history.beforeParcelStatus = ParcelStatus.접수;
+                    history.afterParcelStatus = ParcelStatus.출고;
+                    history.historyChangedDate = shippedDate;
                     parcel.histories[parcel.historyCount] = history;
                     parcel.historyCount++;
-                    parcel.status = ParcelStatus.출고;
+                    parcel.parcelStatus = ParcelStatus.출고;
 
                     System.out.println("출고 처리했습니다.");
                     break;
@@ -233,22 +234,22 @@ public class Ch06Classes {
                 case 5: {
                     System.out.print("취소할 운송장 번호: ");
                     String trackingNumber = scanner.nextLine();
-                    int foundIndex = -1;
+                    int targetPosition = -1;
 
                     for (int index = 0; index < parcelCount; index++) {
                         if (parcels[index].trackingNumber.equals(trackingNumber)) {
-                            foundIndex = index;
+                            targetPosition = index;
                             break;
                         }
                     }
 
-                    if (foundIndex == -1) {
+                    if (targetPosition == -1) {
                         System.out.println("존재하지 않는 운송장 번호입니다.");
                         break;
                     }
 
-                    Parcel parcel = parcels[foundIndex];
-                    if (parcel.status != ParcelStatus.접수) {
+                    Parcel parcel = parcels[targetPosition];
+                    if (parcel.parcelStatus != ParcelStatus.접수) {
                         System.out.println("접수 상태의 택배만 취소할 수 있습니다.");
                         break;
                     }
@@ -257,12 +258,12 @@ public class Ch06Classes {
                     String canceledDate = scanner.nextLine();
 
                     DeliveryHistory history = new DeliveryHistory();
-                    history.beforeStatus = "접수";
-                    history.afterStatus = "취소";
-                    history.changedDate = canceledDate;
+                    history.beforeParcelStatus = ParcelStatus.접수;
+                    history.afterParcelStatus = ParcelStatus.취소;
+                    history.historyChangedDate = canceledDate;
                     parcel.histories[parcel.historyCount] = history;
                     parcel.historyCount++;
-                    parcel.status = ParcelStatus.취소;
+                    parcel.parcelStatus = ParcelStatus.취소;
 
                     System.out.println("배송을 취소했습니다.");
                     break;
@@ -271,27 +272,27 @@ public class Ch06Classes {
                 case 6: {
                     System.out.print("운송장 번호: ");
                     String trackingNumber = scanner.nextLine();
-                    int foundIndex = -1;
+                    int targetPosition = -1;
 
                     for (int index = 0; index < parcelCount; index++) {
                         if (parcels[index].trackingNumber.equals(trackingNumber)) {
-                            foundIndex = index;
+                            targetPosition = index;
                             break;
                         }
                     }
 
-                    if (foundIndex == -1) {
+                    if (targetPosition == -1) {
                         System.out.println("존재하지 않는 운송장 번호입니다.");
                         break;
                     }
 
-                    Parcel parcel = parcels[foundIndex];
+                    Parcel parcel = parcels[targetPosition];
                     for (int index = 0; index < parcel.historyCount; index++) {
                         DeliveryHistory history = parcel.histories[index];
                         System.out.println(
-                                history.changedDate + " / "
-                                        + history.beforeStatus + " → "
-                                        + history.afterStatus
+                                history.historyChangedDate + " / "
+                                        + history.beforeParcelStatus + " → "
+                                        + history.afterParcelStatus
                         );
                     }
                     break;
@@ -316,17 +317,17 @@ class Parcel {
     String destination;
     DeliveryType deliveryType;
     int weight;
-    int fee;
-    ParcelStatus status;
+    int deliveryFee;
+    ParcelStatus parcelStatus;
     String registeredDate;
-    int expectedDeliveryDays;
+    int expectedDeliveryDates;
     DeliveryHistory[] histories = new DeliveryHistory[20];
     int historyCount = 0;
 }
 
 // 택배 상태가 바뀐 기록 한 건을 보관하는 클래스다.
 class DeliveryHistory {
-    String beforeStatus;
-    String afterStatus;
-    String changedDate;
+    ParcelStatus beforeParcelStatus;
+    ParcelStatus afterParcelStatus;
+    String historyChangedDate;
 }

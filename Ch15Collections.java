@@ -54,14 +54,14 @@ class ParcelService {
     }
 
     // 접수 상태의 택배를 출고 또는 취소 상태로 바꾼다.
-    void changeStatus(String trackingNumber, ParcelStatus afterStatus) throws ParcelException {
+    void changeStatus(String trackingNumber, ParcelStatus afterParcelStatus) throws ParcelException {
         Parcel parcel = findParcel(trackingNumber);
-        if (parcel.status != ParcelStatus.접수) {
+        if (parcel.parcelStatus != ParcelStatus.접수) {
             throw new ParcelException("접수 상태의 택배만 처리할 수 있습니다.");
         }
 
-        parcel.addHistory(parcel.status, afterStatus);
-        parcel.status = afterStatus;
+        parcel.addHistory(parcel.parcelStatus, afterParcelStatus);
+        parcel.parcelStatus = afterParcelStatus;
         parcelRepository.save(parcel);
     }
 
@@ -69,7 +69,7 @@ class ParcelService {
     void printAllParcels() {
         for (Parcel parcel : parcelRepository.findAll()) {
             System.out.println(parcel.trackingNumber + " / " + parcel.receiverName
-                    + " / " + parcel.getDeliveryType() + " / " + parcel.status);
+                    + " / " + parcel.getDeliveryType() + " / " + parcel.parcelStatus);
         }
     }
 
@@ -77,8 +77,8 @@ class ParcelService {
     void printHistory(String trackingNumber) throws ParcelException {
         Parcel parcel = findParcel(trackingNumber);
         for (DeliveryHistory history : parcel.histories) {
-            System.out.println(history.changedAt + " / " + history.beforeStatus
-                    + " → " + history.afterStatus);
+            System.out.println(history.changedAt + " / " + history.beforeParcelStatus
+                    + " → " + history.afterParcelStatus);
         }
     }
 
@@ -173,7 +173,7 @@ abstract class Parcel {
     String receiverPhoneNumber;
     String destination;
     int weight;
-    ParcelStatus status = ParcelStatus.접수;
+    ParcelStatus parcelStatus = ParcelStatus.접수;
     LocalDate registeredDate;
     LocalDate expectedDeliveryDate;
 
@@ -194,8 +194,8 @@ abstract class Parcel {
     }
 
     // 상태 변경 이력을 목록에 추가한다.
-    void addHistory(ParcelStatus beforeStatus, ParcelStatus afterStatus) {
-        histories.add(new DeliveryHistory(beforeStatus, afterStatus, LocalDateTime.now()));
+    void addHistory(ParcelStatus beforeParcelStatus, ParcelStatus afterParcelStatus) {
+        histories.add(new DeliveryHistory(beforeParcelStatus, afterParcelStatus, LocalDateTime.now()));
     }
 
     // 배송 종류별 배송비 계산을 자식 클래스에 맡긴다.
@@ -209,14 +209,14 @@ abstract class Parcel {
 
     // 지역과 무게에 따른 공통 기본 배송비를 계산한다.
     int calculateBaseFee() {
-        int fee = 3000;
+        int deliveryFee = 3000;
         if (weight >= 3) {
-            fee += 2000;
+            deliveryFee += 2000;
         }
         if (destination.equals("제주")) {
-            fee += 3000;
+            deliveryFee += 3000;
         }
-        return fee;
+        return deliveryFee;
     }
 }
 
@@ -306,14 +306,14 @@ class OverseasParcel extends Parcel {
 
 // 상태 변경 시각까지 보관하는 배송 이력 클래스다.
 class DeliveryHistory {
-    ParcelStatus beforeStatus;
-    ParcelStatus afterStatus;
+    ParcelStatus beforeParcelStatus;
+    ParcelStatus afterParcelStatus;
     LocalDateTime changedAt;
 
     // 배송 이력 한 건을 초기화한다.
-    DeliveryHistory(ParcelStatus beforeStatus, ParcelStatus afterStatus, LocalDateTime changedAt) {
-        this.beforeStatus = beforeStatus;
-        this.afterStatus = afterStatus;
+    DeliveryHistory(ParcelStatus beforeParcelStatus, ParcelStatus afterParcelStatus, LocalDateTime changedAt) {
+        this.beforeParcelStatus = beforeParcelStatus;
+        this.afterParcelStatus = afterParcelStatus;
         this.changedAt = changedAt;
     }
 }
