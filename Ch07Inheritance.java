@@ -161,6 +161,9 @@ public class Ch07Inheritance {
         }
     }
 
+    // ========== CH07 변경 ==========
+    // 출고와 취소에 중복되던 코드를 상태값을 받는 하나의 메서드로 합친다.
+    // =================================
     // 출고 또는 취소 상태로 바꾸고 이력을 남긴다.
     static void changeStatus(ParcelStatus afterParcelStatus, String dateMessage) {
         String trackingNumber = readLine(afterParcelStatus + "할 운송장 번호: ");

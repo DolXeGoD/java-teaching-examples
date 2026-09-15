@@ -92,6 +92,9 @@ class ParcelService {
         return detail.toString();
     }
 
+    // ========== CH12 변경 ==========
+    // LocalDateTime 값을 원하는 화면 형식의 날짜 문자열로 바꿔 출력한다.
+    // =================================
     // 택배 한 건의 배송 이력을 문자열로 정리해 반환한다.
     String getHistoryText(String trackingNumber) throws ParcelException {
         Parcel parcel = findParcel(trackingNumber);
@@ -194,6 +197,10 @@ abstract class Parcel {
     private String destination;
     private int weight;
     private ParcelStatus parcelStatus = ParcelStatus.접수;
+
+    // ========== CH12 변경 ==========
+    // 접수일과 예상 도착일을 문자열 대신 LocalDate로 관리한다.
+    // =================================
     private final LocalDate registeredDate;
     private LocalDate expectedDeliveryDate;
     private DeliveryHistory[] histories = new DeliveryHistory[20];
@@ -404,6 +411,10 @@ class OverseasParcel extends Parcel {
 class DeliveryHistory {
     private ParcelStatus beforeParcelStatus;
     private ParcelStatus afterParcelStatus;
+
+    // ========== CH12 변경 ==========
+    // 이력의 변경 시각을 문자열 대신 LocalDateTime으로 관리한다.
+    // =================================
     private LocalDateTime changedAt;
 
     // 배송 이력 한 건을 초기화한다.

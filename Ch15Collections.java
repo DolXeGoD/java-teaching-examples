@@ -75,6 +75,9 @@ class ParcelService {
         parcelRepository.save(parcel);
     }
 
+    // ========== CH15 변경 ==========
+    // List가 반환한 택배 목록을 향상된 for문으로 순회한다.
+    // =================================
     // 저장된 모든 택배의 요약 정보를 출력한다.
     void printAllParcels() {
         for (Parcel parcel : parcelRepository.findAll()) {
@@ -83,6 +86,9 @@ class ParcelService {
         }
     }
 
+    // ========== CH15 변경 ==========
+    // List에 담긴 배송 이력도 향상된 for문으로 순회한다.
+    // =================================
     // 특정 택배의 배송 이력을 출력한다.
     void printHistory(String trackingNumber) throws ParcelException {
         Parcel parcel = findParcel(trackingNumber);

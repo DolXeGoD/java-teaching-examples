@@ -132,6 +132,9 @@ class ParcelService {
     }
 }
 
+// ========== CH20 변경 ==========
+// DB 작업에서 생길 수 있는 SQLException을 Repository 밖으로 전달한다.
+// =================================
 // 택배 저장과 조회 기능을 약속하는 인터페이스다.
 interface ParcelRepository {
     // 택배와 배송 이력을 저장하거나 갱신한다.
@@ -155,10 +158,10 @@ class JdbcParcelRepository implements ParcelRepository {
         this.connection = connection;
     }
 
-    // 택배와 해당 택배의 배송 이력을 하나의 작업으로 저장한다.
     // ========== CH20 변경 ==========
-    // 택배 행을 저장한 뒤 배송 이력 행도 함께 DB에 저장한다.
+    // PreparedStatement로 택배 행과 배송 이력 행을 저장하고, 하나의 트랜잭션으로 처리한다.
     // =================================
+    // 택배와 해당 택배의 배송 이력을 하나의 작업으로 저장한다.
     public void save(Parcel parcel) throws SQLException {
         String parcelSql = "INSERT INTO parcels "
                 + "(tracking_number, receiver_name, receiver_phone_number, destination, weight, "

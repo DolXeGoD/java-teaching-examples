@@ -17,6 +17,9 @@ enum ParcelStatus {
 }
 
 public class Ch18FileStorage {
+    // ========== CH18 변경 ==========
+    // 메모리 저장소 대신 파일 저장소를 만들고, 시작할 때 기존 파일을 읽어 온다.
+    // =================================
     // 파일 저장소가 프로그램 재실행 뒤에도 데이터를 읽는지 확인한다.
     public static void main(String[] args) {
         try {
@@ -130,6 +133,9 @@ class ParcelService {
     }
 }
 
+// ========== CH18 변경 ==========
+// 파일 읽기와 쓰기에서 생길 수 있는 IOException을 Repository 밖으로 전달한다.
+// =================================
 // 파일 저장과 메모리 저장에 공통으로 필요한 기능을 약속하는 인터페이스다.
 interface ParcelRepository {
     // 택배를 저장하거나 갱신한다.
