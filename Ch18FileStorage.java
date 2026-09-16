@@ -16,6 +16,14 @@ enum ParcelStatus {
     취소
 }
 
+// 택배 접수 때 선택하는 배송 종류다.
+enum DeliveryType {
+    일반,
+    특급,
+    냉장,
+    해외
+}
+
 public class Ch18FileStorage {
     // ========== CH18 변경 ==========
     // 메모리 저장소 대신 파일 저장소를 만들고, 시작할 때 기존 파일을 읽어 온다.
@@ -197,6 +205,7 @@ class FileParcelRepository implements ParcelRepository {
                         Integer.parseInt(values[4]), values[5], LocalDate.parse(values[7]));
                 parcel.setParcelStatus(ParcelStatus.valueOf(values[6]));
                 parcel.setExpectedDeliveryDate(LocalDate.parse(values[8]));
+                parcel.setDeliveryFee(Integer.parseInt(values[9]));
                 parcelList.add(parcel);
                 parcelMap.put(parcel.getTrackingNumber(), parcel);
             }
@@ -233,11 +242,11 @@ class FileParcelRepository implements ParcelRepository {
                     parcel.getReceiverPhoneNumber(),
                     parcel.getDestination(),
                     String.valueOf(parcel.getWeight()),
-                    parcel.getDeliveryType(),
+                    parcel.getDeliveryType().toString(),
                     parcel.getParcelStatus().toString(),
                     parcel.getRegisteredDate().toString(),
                     parcel.getExpectedDeliveryDate().toString(),
-                    String.valueOf(parcel.calculateFee())
+                    String.valueOf(parcel.getDeliveryFee())
             ));
 
             for (DeliveryHistory history : parcel.getHistories()) {
@@ -303,7 +312,13 @@ abstract class Parcel {
     private String receiverName;
     private String receiverPhoneNumber;
     private String destination;
+    private final DeliveryType deliveryType;
     private int weight;
+
+    // ========== CH07 상속 유지 ==========
+    // 배송 종류별 계산 결과는 택배 객체의 배송비 필드에 저장한다.
+    // =================================
+    private int deliveryFee;
     private ParcelStatus parcelStatus = ParcelStatus.접수;
     private final LocalDate registeredDate;
     private LocalDate expectedDeliveryDate;
@@ -311,11 +326,12 @@ abstract class Parcel {
 
     // 공통 택배 정보를 초기화한다.
     Parcel(String trackingNumber, String receiverName, String receiverPhoneNumber,
-           String destination, int weight, LocalDate registeredDate) {
+           String destination, DeliveryType deliveryType, int weight, LocalDate registeredDate) {
         this.trackingNumber = trackingNumber;
         this.receiverName = receiverName;
         this.receiverPhoneNumber = receiverPhoneNumber;
         this.destination = destination;
+        this.deliveryType = deliveryType;
         setWeight(weight);
         this.registeredDate = registeredDate;
     }
@@ -343,6 +359,11 @@ abstract class Parcel {
     // 배송 지역을 반환한다.
     String getDestination() {
         return destination;
+    }
+
+    // 접수할 때 선택한 배송 종류를 반환한다.
+    DeliveryType getDeliveryType() {
+        return deliveryType;
     }
 
     // 택배 무게를 반환한다.
@@ -390,14 +411,21 @@ abstract class Parcel {
         return histories;
     }
 
+    // 계산되어 저장된 배송비를 반환한다.
+    int getDeliveryFee() {
+        return deliveryFee;
+    }
+
+    // 자식 클래스가 계산한 배송비를 택배 객체에 저장한다.
+    void setDeliveryFee(int deliveryFee) {
+        this.deliveryFee = deliveryFee;
+    }
+
     // 배송 종류별 배송비 계산을 자식 클래스에 맡긴다.
     abstract int calculateFee();
 
     // 배송 종류별 예상 도착 일수 계산을 자식 클래스에 맡긴다.
     abstract int getExpectedDeliveryDays();
-
-    // 배송 종류 이름을 자식 클래스에 맡긴다.
-    abstract String getDeliveryType();
 
     // 지역과 무게에 따른 공통 기본 배송비를 계산한다.
     int calculateBaseFee() {
@@ -423,7 +451,9 @@ class NormalParcel extends Parcel {
     // 일반 배송 택배를 초기화한다.
     NormalParcel(String trackingNumber, String receiverName, String receiverPhoneNumber,
                  String destination, int weight, LocalDate registeredDate) {
-        super(trackingNumber, receiverName, receiverPhoneNumber, destination, weight, registeredDate);
+        super(trackingNumber, receiverName, receiverPhoneNumber, destination,
+                DeliveryType.일반, weight, registeredDate);
+        setDeliveryFee(calculateFee());
     }
     // 일반 배송비를 계산한다.
     int calculateFee() {
@@ -433,10 +463,6 @@ class NormalParcel extends Parcel {
     int getExpectedDeliveryDays() {
         return 3;
     }
-    // 일반 배송 이름을 반환한다.
-    String getDeliveryType() {
-        return "일반";
-    }
 }
 
 // 특급 배송 규칙을 가진 클래스다.
@@ -444,7 +470,9 @@ class ExpressParcel extends Parcel {
     // 특급 배송 택배를 초기화한다.
     ExpressParcel(String trackingNumber, String receiverName, String receiverPhoneNumber,
                   String destination, int weight, LocalDate registeredDate) {
-        super(trackingNumber, receiverName, receiverPhoneNumber, destination, weight, registeredDate);
+        super(trackingNumber, receiverName, receiverPhoneNumber, destination,
+                DeliveryType.특급, weight, registeredDate);
+        setDeliveryFee(calculateFee());
     }
     // 특급 배송비를 계산한다.
     int calculateFee() {
@@ -454,10 +482,6 @@ class ExpressParcel extends Parcel {
     int getExpectedDeliveryDays() {
         return 1;
     }
-    // 특급 배송 이름을 반환한다.
-    String getDeliveryType() {
-        return "특급";
-    }
 }
 
 // 냉장 배송 규칙을 가진 클래스다.
@@ -465,7 +489,9 @@ class RefrigeratedParcel extends Parcel {
     // 냉장 배송 택배를 초기화한다.
     RefrigeratedParcel(String trackingNumber, String receiverName, String receiverPhoneNumber,
                        String destination, int weight, LocalDate registeredDate) {
-        super(trackingNumber, receiverName, receiverPhoneNumber, destination, weight, registeredDate);
+        super(trackingNumber, receiverName, receiverPhoneNumber, destination,
+                DeliveryType.냉장, weight, registeredDate);
+        setDeliveryFee(calculateFee());
     }
     // 냉장 배송비를 계산한다.
     int calculateFee() {
@@ -475,10 +501,6 @@ class RefrigeratedParcel extends Parcel {
     int getExpectedDeliveryDays() {
         return 1;
     }
-    // 냉장 배송 이름을 반환한다.
-    String getDeliveryType() {
-        return "냉장";
-    }
 }
 
 // 해외 배송 규칙을 가진 클래스다.
@@ -486,7 +508,9 @@ class OverseasParcel extends Parcel {
     // 해외 배송 택배를 초기화한다.
     OverseasParcel(String trackingNumber, String receiverName, String receiverPhoneNumber,
                    String destination, int weight, LocalDate registeredDate) {
-        super(trackingNumber, receiverName, receiverPhoneNumber, destination, weight, registeredDate);
+        super(trackingNumber, receiverName, receiverPhoneNumber, destination,
+                DeliveryType.해외, weight, registeredDate);
+        setDeliveryFee(calculateFee());
     }
     // 해외 배송비를 계산한다.
     int calculateFee() {
@@ -495,10 +519,6 @@ class OverseasParcel extends Parcel {
     // 해외 배송 일수를 반환한다.
     int getExpectedDeliveryDays() {
         return 7;
-    }
-    // 해외 배송 이름을 반환한다.
-    String getDeliveryType() {
-        return "해외";
     }
 }
 
