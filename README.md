@@ -13,7 +13,6 @@ Ch07Inheritance.java     배송 종류별 계산을 상속으로 분리
 Ch08Repository.java      저장 기능을 인터페이스와 메모리 구현체로 분리
 Ch11Exceptions.java      예외 처리 적용
 Ch12DateAndString.java   날짜와 문자열 처리 개선
-Ch13Generics.java        반복되는 배열 저장 코드를 제네릭으로 통합
 Ch15Collections.java     표준 컬렉션으로 전환
 Ch18FileStorage.java     파일 저장소 적용
 Ch20JdbcStorage.java     JDBC 저장소 적용

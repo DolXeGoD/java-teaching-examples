@@ -106,6 +106,15 @@ public class Ch11Exceptions {
         // 각각의 정보를 받아서 배열에 넣어주기
         // 1. 운송장 번호
         String trackingNumber = readLine("운송장 번호를 입력하세요 : ");
+
+        if (parcelRepository.findByTrackingNumber(trackingNumber) != null) {
+            throw new ParcelException("이미 사용 중인 운송장 번호입니다.");
+        }
+
+        if (!parcelRepository.hasSpace()) {
+            throw new ParcelException("더 이상 택배를 접수할 수 없습니다.");
+        }
+
         // 2. 수령인 이름
         String receiverName = readLine("수령인 이름 입력하세요 : ");
         // 3. 수령인 연락처
@@ -601,14 +610,14 @@ class RefrigeratedParcel extends Parcel {
         super(trackingNumber, receiverName, receiverPhoneNumber, destination,
                 weight, registeredDate, DeliveryType.냉장);
         setFee(calculateFee());
-        setExpectedDeliveryDate(calculateExpectedDeliveryDates());
+        setExpectedDeliveryDate(calculateExpectedDeliveryDays());
     }
 
     int calculateFee() {
         return calculateBaseFee() + 4000;
     }
 
-    int calculateExpectedDeliveryDates() {
+    int calculateExpectedDeliveryDays() {
         return 1;
     }
 }
@@ -619,14 +628,14 @@ class OverseasParcel extends Parcel {
         super(trackingNumber, receiverName, receiverPhoneNumber, destination,
                 weight, registeredDate, DeliveryType.해외);
         setFee(calculateFee());
-        setExpectedDeliveryDate(calculateExpectedDeliveryDates());
+        setExpectedDeliveryDate(calculateExpectedDeliveryDays());
     }
 
     int calculateFee() {
         return calculateBaseFee() + 15000;
     }
 
-    int calculateExpectedDeliveryDates() {
+    int calculateExpectedDeliveryDays() {
         return 7;
     }
 }

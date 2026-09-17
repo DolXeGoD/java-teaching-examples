@@ -560,14 +560,14 @@ class RefrigeratedParcel extends Parcel {
         super(trackingNumber, receiverName, receiverPhoneNumber, destination,
                 weight, registeredDate, DeliveryType.냉장);
         setFee(calculateFee());
-        setExpectedDeliveryDate(calculateExpectedDeliveryDates());
+        setExpectedDeliveryDate(calculateExpectedDeliveryDays());
     }
 
     int calculateFee() {
         return calculateBaseFee() + 4000;
     }
 
-    int calculateExpectedDeliveryDates() {
+    int calculateExpectedDeliveryDays() {
         return 1;
     }
 }
@@ -578,14 +578,14 @@ class OverseasParcel extends Parcel {
         super(trackingNumber, receiverName, receiverPhoneNumber, destination,
                 weight, registeredDate, DeliveryType.해외);
         setFee(calculateFee());
-        setExpectedDeliveryDate(calculateExpectedDeliveryDates());
+        setExpectedDeliveryDate(calculateExpectedDeliveryDays());
     }
 
     int calculateFee() {
         return calculateBaseFee() + 15000;
     }
 
-    int calculateExpectedDeliveryDates() {
+    int calculateExpectedDeliveryDays() {
         return 7;
     }
 }
