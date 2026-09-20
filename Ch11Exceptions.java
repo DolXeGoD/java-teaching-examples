@@ -1,6 +1,5 @@
 import java.util.Scanner;
 
-
 enum DeliveryType {
     일반,
     특급,
@@ -8,16 +7,12 @@ enum DeliveryType {
     해외
 }
 
-
 enum ParcelStatus {
     접수,
     출고,
     취소,
     없음
 }
-
-
-
 
 public class Ch11Exceptions {
     static Scanner scanner = new Scanner(System.in);
@@ -106,15 +101,6 @@ public class Ch11Exceptions {
         // 각각의 정보를 받아서 배열에 넣어주기
         // 1. 운송장 번호
         String trackingNumber = readLine("운송장 번호를 입력하세요 : ");
-
-        if (parcelRepository.findByTrackingNumber(trackingNumber) != null) {
-            throw new ParcelException("이미 사용 중인 운송장 번호입니다.");
-        }
-
-        if (!parcelRepository.hasSpace()) {
-            throw new ParcelException("더 이상 택배를 접수할 수 없습니다.");
-        }
-
         // 2. 수령인 이름
         String receiverName = readLine("수령인 이름 입력하세요 : ");
         // 3. 수령인 연락처

@@ -1,13 +1,9 @@
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 
 enum DeliveryType {
@@ -42,7 +38,7 @@ public class Ch18FileStorage {
 
                     switch (menu) {
                         case 0:
-                            if (!parcelRepository.findAll().isEmpty()) {
+                            if (!parcelRepository.isEmpty()) {
                                 System.out.println("현재 택배가 1개 이상 관리되고 있습니다. 정말 종료하시겠습니까?");
                                 String decide = readLine("종료하려면 Y를, 취소하려면 N을 입력해주세요 : ");
 
@@ -85,19 +81,21 @@ public class Ch18FileStorage {
         }
     }
 
-    // 여러 메뉴에서 반복되는 숫자 입력을 처리한다.
+    // 여러 메뉴에서 반복되는 숫자 입력 처리를 readInt로 분리한다.
+    // 입력 안내 후 정수를 입력받아 반환한다.
     static int readInt(String message) {
         System.out.print(message);
         return Integer.parseInt(scanner.nextLine());
     }
 
-    // 여러 메뉴에서 반복되는 문자열 입력을 처리한다.
+    // 여러 메뉴에서 반복되는 문자열 입력 처리를 readLine으로 분리한다.
+    // 입력 안내 후 문자열을 입력받아 반환한다.
     static String readLine(String message) {
         System.out.print(message);
         return scanner.nextLine();
     }
 
-    // 택배 관리 메뉴를 출력한다.
+    // 메뉴 출력 메서드
     static void printMenu() {
         System.out.println("======= 택배 관리 시스템 =======");
         System.out.println("1. 택배 접수");
@@ -110,7 +108,7 @@ public class Ch18FileStorage {
         System.out.println("============================");
     }
 
-    // 택배를 접수한다.
+    // 택배 접수
     static void registerParcel() throws ParcelException, IOException {
         String trackingNumber = readLine("운송장 번호를 입력하세요 : ");
 
@@ -121,7 +119,7 @@ public class Ch18FileStorage {
         String receiverName = readLine("수령인 이름 입력하세요 : ");
         String receiverPhoneNumber = readLine("수령인 연락처를 입력하세요 : ");
         String destination = readLine("배송 지역을 입력하세요 : ");
-        LocalDate registeredDate = LocalDate.now();
+        LocalDateTime registeredDate = LocalDateTime.now();
 
         System.out.println("1. 간편 접수(일반 배송, 1kg)");
         System.out.println("2. 상세 접수(배송 종류와 무게 직접 입력)");
@@ -187,12 +185,12 @@ public class Ch18FileStorage {
             throw new ParcelException("접수 방식을 다시 선택해주세요.");
         }
 
-        parcel.addHistory(ParcelStatus.없음, ParcelStatus.접수);
+        parcel.addHistory(ParcelStatus.없음, ParcelStatus.접수, registeredDate);
         parcelRepository.save(parcel);
         System.out.println("접수가 완료되었습니다. 운송장 번호 : " + trackingNumber);
     }
 
-    // 배송 종류를 입력받아 enum 값으로 반환한다.
+    // 정해진 배송 종류 중 하나를 입력받은 뒤, 배송 타입으로 변환하여 반환한다.
     static DeliveryType readDeliveryType() {
         while (true) {
             String deliveryTypeString =
@@ -212,8 +210,8 @@ public class Ch18FileStorage {
         }
     }
 
-    // 운송장 번호로 택배를 조회한다.
-    static void findParcel() throws ParcelException, IOException {
+    // 택배 조회
+    static void findParcel() throws ParcelException {
         String searchTarget = readLine("운송장 번호를 입력하세요 : ");
         Parcel parcel = parcelRepository.findByTrackingNumber(searchTarget);
 
@@ -226,33 +224,40 @@ public class Ch18FileStorage {
 
     // 한 택배의 상세 정보를 출력한다.
     static void printParcel(Parcel parcel) {
-        StringBuilder detail = new StringBuilder();
-        detail.append("운송장 번호: ").append(parcel.getTrackingNumber()).append('\n');
-        detail.append("수령인: ").append(parcel.getReceiverName()).append('\n');
-        detail.append("연락처: ").append(parcel.getReceiverPhoneNumber()).append('\n');
-        detail.append("배송 지역: ").append(parcel.getDestination()).append('\n');
-        detail.append("배송 종류: ").append(parcel.getDeliveryType()).append('\n');
-        detail.append("무게: ").append(parcel.getWeight()).append("kg\n");
-        detail.append("배송비: ").append(parcel.getFee()).append("원\n");
-        detail.append("접수일: ").append(parcel.getRegisteredDate()).append('\n');
-        detail.append("예상 도착일: ").append(parcel.getExpectedDeliveryDate()).append('\n');
-        detail.append("상태: ").append(parcel.getParcelStatus());
-        System.out.println(detail);
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("운송장 번호: ").append(parcel.getTrackingNumber()).append('\n');
+        stringBuilder.append("수령인: ").append(parcel.getReceiverName()).append('\n');
+        stringBuilder.append("연락처: ").append(parcel.getReceiverPhoneNumber()).append('\n');
+        stringBuilder.append("배송 지역: ").append(parcel.getDestination()).append('\n');
+        stringBuilder.append("배송 종류: ").append(parcel.getDeliveryType()).append('\n');
+        stringBuilder.append("무게: ").append(parcel.getWeight()).append("kg\n");
+        stringBuilder.append("배송비: ").append(parcel.getFee()).append("원\n");
+        stringBuilder.append("상태: ").append(parcel.getParcelStatus()).append('\n');
+        stringBuilder.append("접수일: ").append(parcel.getRegisteredDate()).append('\n');
+        stringBuilder.append("예상 도착일: ").append(parcel.getExpectedDeliveryDate()).append('\n');
+        System.out.println(stringBuilder);
     }
 
-    // 전체 택배를 조회한다.
-    static void printAllParcels() throws ParcelException, IOException {
-        if (parcelRepository.findAll().isEmpty()) {
+    // 전체 택배 조회
+    static void printAllParcels() throws ParcelException {
+        if (parcelRepository.isEmpty()) {
             throw new ParcelException("접수된 택배가 없습니다.");
         }
 
-        for (Parcel parcel : parcelRepository.findAll()) {
-            System.out.println(parcel.getTrackingNumber() + " / " + parcel.getReceiverName()
-                    + " / " + parcel.getDeliveryType() + " / " + parcel.getParcelStatus());
+        List<Parcel> parcels = parcelRepository.findAll();
+
+        for (Parcel parcel : parcels) {
+            System.out.println(
+                    parcel.getTrackingNumber() + " / "
+                            + parcel.getReceiverName() + " / "
+                            + parcel.getDeliveryType() + " / "
+                            + parcel.getParcelStatus()
+            );
         }
     }
 
-    // 접수 상태의 택배를 출고 또는 취소 상태로 변경한다.
+    // 출고/취소 통합 메서드
+    // 접수 상태의 택배를 출고 또는 취소 상태로 변경 후 이력 추가하는 메서드
     static void changeParcelStatus(ParcelStatus afterParcelStatus)
             throws ParcelException, IOException {
         String trackingNumber = readLine(afterParcelStatus + "할 운송장 번호: ");
@@ -266,14 +271,14 @@ public class Ch18FileStorage {
             throw new ParcelException("접수 상태의 택배만 " + afterParcelStatus + " 처리할 수 있습니다.");
         }
 
-        parcel.addHistory(parcel.getParcelStatus(), afterParcelStatus);
+        parcel.addHistory(parcel.getParcelStatus(), afterParcelStatus, LocalDateTime.now());
         parcel.setParcelStatus(afterParcelStatus);
         parcelRepository.save(parcel);
         System.out.println(afterParcelStatus + " 처리했습니다.");
     }
 
-    // 배송 이력을 출력한다.
-    static void printHistory() throws ParcelException, IOException {
+    // 배송 이력 출력
+    static void printHistory() throws ParcelException {
         String searchTarget = readLine("조회할 운송장 번호 : ");
         Parcel parcel = parcelRepository.findByTrackingNumber(searchTarget);
 
@@ -281,17 +286,14 @@ public class Ch18FileStorage {
             throw new ParcelException("해당 택배를 찾을 수 없습니다.");
         }
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-        StringBuilder historyText = new StringBuilder();
-
-        for (DeliveryHistory history : parcel.getHistories()) {
-            historyText.append(parcel.getTrackingNumber()).append("|");
-            historyText.append(history.getChangedAt().format(formatter)).append("|");
-            historyText.append(history.getBeforeParcelStatus()).append("|");
-            historyText.append(history.getAfterParcelStatus()).append('\n');
+        for (int i = 0; i < parcel.getHistoryCount(); i++) {
+            System.out.println(
+                    parcel.getTrackingNumber() + "|"
+                            + parcel.getHistories()[i].historyChangedDates + "|"
+                            + parcel.getHistories()[i].beforeParcelStatus + "|"
+                            + parcel.getHistories()[i].afterParcelStatus
+            );
         }
-
-        System.out.print(historyText);
     }
 }
 
@@ -304,10 +306,13 @@ interface ParcelRepository {
     void save(Parcel parcel) throws IOException;
 
     // 운송장 번호로 택배를 찾는다.
-    Parcel findByTrackingNumber(String trackingNumber) throws IOException;
+    Parcel findByTrackingNumber(String trackingNumber);
 
     // 저장된 모든 택배를 반환한다.
-    List<Parcel> findAll() throws IOException;
+    List<Parcel> findAll();
+
+    // 택배 상자 리스트가 비었는지 확인한다.
+    boolean isEmpty();
 }
 
 // ========== CH18 변경 ==========
@@ -316,8 +321,7 @@ interface ParcelRepository {
 class FileParcelRepository implements ParcelRepository {
     private static final Path PARCEL_FILE = Path.of("parcel_data.txt");
     private static final Path HISTORY_FILE = Path.of("parcel_history.txt");
-    private List<Parcel> parcelList = new ArrayList<>();
-    private Map<String, Parcel> parcelMap = new HashMap<>();
+    private List<Parcel> parcels = new ArrayList<>();
 
     // 프로그램 시작 시 기존 파일 데이터를 메모리로 읽는다.
     FileParcelRepository() throws IOException {
@@ -326,22 +330,30 @@ class FileParcelRepository implements ParcelRepository {
 
     // 택배를 메모리에 반영한 뒤 두 파일에 다시 저장한다.
     public void save(Parcel parcel) throws IOException {
-        if (!parcelMap.containsKey(parcel.getTrackingNumber())) {
-            parcelList.add(parcel);
+        if (findByTrackingNumber(parcel.getTrackingNumber()) == null) {
+            parcels.add(parcel);
         }
-
-        parcelMap.put(parcel.getTrackingNumber(), parcel);
         writeAll();
     }
 
-    // Map에서 운송장 번호로 택배를 찾는다.
+    // 운송장 번호가 같은 택배를 찾는다.
     public Parcel findByTrackingNumber(String trackingNumber) {
-        return parcelMap.get(trackingNumber);
+        for (Parcel parcel : parcels) {
+            if (parcel.getTrackingNumber().equals(trackingNumber)) {
+                return parcel;
+            }
+        }
+
+        return null;
     }
 
     // 전체 택배 목록을 반환한다.
     public List<Parcel> findAll() {
-        return parcelList;
+        return parcels;
+    }
+
+    public boolean isEmpty() {
+        return parcels.isEmpty();
     }
 
     // 두 파일의 내용을 읽어 택배와 이력을 복원한다.
@@ -357,12 +369,11 @@ class FileParcelRepository implements ParcelRepository {
                 }
 
                 Parcel parcel = createParcel(values[0], values[1], values[2], values[3],
-                        Integer.parseInt(values[4]), values[5], LocalDate.parse(values[7]));
+                        Integer.parseInt(values[4]), values[5], LocalDateTime.parse(values[7]));
                 parcel.setParcelStatus(ParcelStatus.valueOf(values[6]));
-                parcel.setExpectedDeliveryDate(LocalDate.parse(values[8]));
+                parcel.setExpectedDeliveryDate(LocalDateTime.parse(values[8]));
                 parcel.setFee(Integer.parseInt(values[9]));
-                parcelList.add(parcel);
-                parcelMap.put(parcel.getTrackingNumber(), parcel);
+                parcels.add(parcel);
             }
         }
 
@@ -373,12 +384,12 @@ class FileParcelRepository implements ParcelRepository {
                     continue;
                 }
 
-                Parcel parcel = parcelMap.get(values[0]);
+                Parcel parcel = findByTrackingNumber(values[0]);
                 if (parcel != null) {
-                    parcel.getHistories().add(new DeliveryHistory(
+                    parcel.addHistory(
                             ParcelStatus.valueOf(values[1]),
                             ParcelStatus.valueOf(values[2]),
-                            LocalDateTime.parse(values[3])));
+                            LocalDateTime.parse(values[3]));
                 }
             }
         }
@@ -392,7 +403,7 @@ class FileParcelRepository implements ParcelRepository {
         List<String> parcelLines = new ArrayList<>();
         List<String> historyLines = new ArrayList<>();
 
-        for (Parcel parcel : parcelList) {
+        for (Parcel parcel : parcels) {
             parcelLines.add(String.join("\t",
                     parcel.getTrackingNumber(),
                     parcel.getReceiverName(),
@@ -406,12 +417,13 @@ class FileParcelRepository implements ParcelRepository {
                     String.valueOf(parcel.getFee())
             ));
 
-            for (DeliveryHistory history : parcel.getHistories()) {
+            for (int i = 0; i < parcel.getHistoryCount(); i++) {
+                DeliveryHistory history = parcel.getHistories()[i];
                 historyLines.add(String.join("\t",
                         parcel.getTrackingNumber(),
-                        history.getBeforeParcelStatus().toString(),
-                        history.getAfterParcelStatus().toString(),
-                        history.getChangedAt().toString()
+                        history.beforeParcelStatus.toString(),
+                        history.afterParcelStatus.toString(),
+                        history.historyChangedDates.toString()
                 ));
             }
         }
@@ -423,7 +435,7 @@ class FileParcelRepository implements ParcelRepository {
     // 파일에서 읽은 배송 종류에 맞는 택배 객체를 만든다.
     private Parcel createParcel(String trackingNumber, String receiverName, String receiverPhoneNumber,
                                 String destination, int weight, String deliveryType,
-                                LocalDate registeredDate) {
+                                LocalDateTime registeredDate) {
         if (deliveryType.equals("특급")) {
             Parcel parcel = new ExpressParcel(trackingNumber, receiverName,
                     receiverPhoneNumber, destination, weight, registeredDate);
@@ -460,8 +472,9 @@ class ParcelException extends Exception {
 abstract class Parcel {
     static final int MAXIMUM_WEIGHT = 20;
     private static final int BASIC_DELIVERY_FEE = 3000;
-    private static final int HEAVY_PARCEL_FEE = 2000;
     private static final int JEJU_DELIVERY_FEE = 3000;
+    private static final int HEAVY_PARCEL_FEE = 2000;
+    private static final int HEAVY_PARCEL_MINIMUM_WEIGHT = 3;
     private final String trackingNumber;
     private String receiverName;
     private String receiverPhoneNumber;
@@ -471,13 +484,14 @@ abstract class Parcel {
 
     private int fee;
     private ParcelStatus parcelStatus;
-    private final LocalDate registeredDate;
-    private LocalDate expectedDeliveryDate;
-    private List<DeliveryHistory> histories = new ArrayList<>();
+    private final LocalDateTime registeredDate;
+    private LocalDateTime expectedDeliveryDate;
+    private DeliveryHistory[] histories = new DeliveryHistory[20];
+    private int historyCount = 0;
 
     // 공통 택배 정보를 초기화한다.
     Parcel(String trackingNumber, String receiverName, String receiverPhoneNumber,
-           String destination, int weight, LocalDate registeredDate, DeliveryType deliveryType) {
+           String destination, int weight, LocalDateTime registeredDate, DeliveryType deliveryType) {
         this.trackingNumber = trackingNumber;
         this.receiverName = receiverName;
         this.receiverPhoneNumber = receiverPhoneNumber;
@@ -488,9 +502,18 @@ abstract class Parcel {
         this.deliveryType = deliveryType;
     }
 
-    // 상태 변경 이력을 목록에 추가한다.
-    void addHistory(ParcelStatus beforeParcelStatus, ParcelStatus afterParcelStatus) {
-        histories.add(new DeliveryHistory(beforeParcelStatus, afterParcelStatus, LocalDateTime.now()));
+    // 택배의 배송 이력 배열에 한 건을 추가한다.
+    void addHistory(ParcelStatus beforeParcelStatus,
+                    ParcelStatus afterParcelStatus,
+                    LocalDateTime historyChangedDate) {
+        DeliveryHistory deliveryHistory = new DeliveryHistory(
+                beforeParcelStatus,
+                afterParcelStatus,
+                historyChangedDate
+        );
+
+        histories[historyCount] = deliveryHistory;
+        historyCount++;
     }
 
     // 운송장 번호를 반환한다.
@@ -534,17 +557,17 @@ abstract class Parcel {
     }
 
     // 접수일을 반환한다.
-    public LocalDate getRegisteredDate() {
+    public LocalDateTime getRegisteredDate() {
         return registeredDate;
     }
 
     // 예상 도착일을 반환한다.
-    public LocalDate getExpectedDeliveryDate() {
+    public LocalDateTime getExpectedDeliveryDate() {
         return expectedDeliveryDate;
     }
 
     // 예상 도착일을 저장한다.
-    public void setExpectedDeliveryDate(LocalDate expectedDeliveryDate) {
+    public void setExpectedDeliveryDate(LocalDateTime expectedDeliveryDate) {
         this.expectedDeliveryDate = expectedDeliveryDate;
     }
 
@@ -558,9 +581,14 @@ abstract class Parcel {
         return true;
     }
 
-    // 배송 이력 목록을 반환한다.
-    public List<DeliveryHistory> getHistories() {
+    // 배송 이력 배열을 반환한다.
+    public DeliveryHistory[] getHistories() {
         return histories;
+    }
+
+    // 저장된 배송 이력 개수를 반환한다.
+    public int getHistoryCount() {
+        return historyCount;
     }
 
     // 계산되어 저장된 배송비를 반환한다.
@@ -575,14 +603,14 @@ abstract class Parcel {
 
     // 지역과 무게에 따른 공통 기본 배송비를 계산한다.
     int calculateBaseFee() {
-        int fee = BASIC_DELIVERY_FEE;
-        if (weight >= 3) {
-            fee += HEAVY_PARCEL_FEE;
+        int deliveryFee = BASIC_DELIVERY_FEE;
+        if (weight >= HEAVY_PARCEL_MINIMUM_WEIGHT) {
+            deliveryFee += HEAVY_PARCEL_FEE;
         }
         if (destination.equals("제주")) {
-            fee += JEJU_DELIVERY_FEE;
+            deliveryFee += JEJU_DELIVERY_FEE;
         }
-        return fee;
+        return deliveryFee;
     }
 }
 
@@ -590,25 +618,25 @@ abstract class Parcel {
 class NormalParcel extends Parcel {
     // 간편 접수는 일반 배송과 1kg을 기본값으로 사용한다.
     NormalParcel(String trackingNumber, String receiverName, String receiverPhoneNumber,
-                 String destination, LocalDate registeredDate) {
+                 String destination, LocalDateTime registeredDate) {
         this(trackingNumber, receiverName, receiverPhoneNumber, destination, 1, registeredDate);
     }
 
     // 일반 배송 택배를 초기화한다.
     NormalParcel(String trackingNumber, String receiverName, String receiverPhoneNumber,
-                 String destination, int weight, LocalDate registeredDate) {
+                 String destination, int weight, LocalDateTime registeredDate) {
         super(trackingNumber, receiverName, receiverPhoneNumber, destination,
                 weight, registeredDate, DeliveryType.일반);
         setFee(calculateFee());
-        setExpectedDeliveryDate(registeredDate.plusDays(calculateExpectedDeliveryDays()));
+        setExpectedDeliveryDate(calculateExpectedDeliveryDays());
     }
     // 일반 배송비를 계산한다.
     int calculateFee() {
         return calculateBaseFee();
     }
     // 일반 배송 일수를 반환한다.
-    int calculateExpectedDeliveryDays() {
-        return 3;
+    LocalDateTime calculateExpectedDeliveryDays() {
+        return getRegisteredDate().plusDays(3);
     }
 }
 
@@ -616,19 +644,19 @@ class NormalParcel extends Parcel {
 class ExpressParcel extends Parcel {
     // 특급 배송 택배를 초기화한다.
     ExpressParcel(String trackingNumber, String receiverName, String receiverPhoneNumber,
-                  String destination, int weight, LocalDate registeredDate) {
+                  String destination, int weight, LocalDateTime registeredDate) {
         super(trackingNumber, receiverName, receiverPhoneNumber, destination,
                 weight, registeredDate, DeliveryType.특급);
         setFee(calculateFee());
-        setExpectedDeliveryDate(registeredDate.plusDays(calculateExpectedDeliveryDays()));
+        setExpectedDeliveryDate(calculateExpectedDeliveryDays());
     }
     // 특급 배송비를 계산한다.
     int calculateFee() {
         return calculateBaseFee() + 2000;
     }
     // 특급 배송 일수를 반환한다.
-    int calculateExpectedDeliveryDays() {
-        return 1;
+    LocalDateTime calculateExpectedDeliveryDays() {
+        return getRegisteredDate().plusDays(1);
     }
 }
 
@@ -636,19 +664,19 @@ class ExpressParcel extends Parcel {
 class RefrigeratedParcel extends Parcel {
     // 냉장 배송 택배를 초기화한다.
     RefrigeratedParcel(String trackingNumber, String receiverName, String receiverPhoneNumber,
-                       String destination, int weight, LocalDate registeredDate) {
+                       String destination, int weight, LocalDateTime registeredDate) {
         super(trackingNumber, receiverName, receiverPhoneNumber, destination,
                 weight, registeredDate, DeliveryType.냉장);
         setFee(calculateFee());
-        setExpectedDeliveryDate(registeredDate.plusDays(calculateExpectedDeliveryDays()));
+        setExpectedDeliveryDate(calculateExpectedDeliveryDays());
     }
     // 냉장 배송비를 계산한다.
     int calculateFee() {
         return calculateBaseFee() + 4000;
     }
     // 냉장 배송 일수를 반환한다.
-    int calculateExpectedDeliveryDays() {
-        return 1;
+    LocalDateTime calculateExpectedDeliveryDays() {
+        return getRegisteredDate().plusDays(1);
     }
 }
 
@@ -656,48 +684,34 @@ class RefrigeratedParcel extends Parcel {
 class OverseasParcel extends Parcel {
     // 해외 배송 택배를 초기화한다.
     OverseasParcel(String trackingNumber, String receiverName, String receiverPhoneNumber,
-                   String destination, int weight, LocalDate registeredDate) {
+                   String destination, int weight, LocalDateTime registeredDate) {
         super(trackingNumber, receiverName, receiverPhoneNumber, destination,
                 weight, registeredDate, DeliveryType.해외);
         setFee(calculateFee());
-        setExpectedDeliveryDate(registeredDate.plusDays(calculateExpectedDeliveryDays()));
+        setExpectedDeliveryDate(calculateExpectedDeliveryDays());
     }
     // 해외 배송비를 계산한다.
     int calculateFee() {
         return calculateBaseFee() + 15000;
     }
     // 해외 배송 일수를 반환한다.
-    int calculateExpectedDeliveryDays() {
-        return 7;
+    LocalDateTime calculateExpectedDeliveryDays() {
+        return getRegisteredDate().plusDays(7);
     }
 }
 
 // 상태 변경 시각까지 보관하는 배송 이력 클래스다.
 class DeliveryHistory {
-    private ParcelStatus beforeParcelStatus;
-    private ParcelStatus afterParcelStatus;
-    private LocalDateTime changedAt;
+    ParcelStatus beforeParcelStatus;
+    ParcelStatus afterParcelStatus;
+    LocalDateTime historyChangedDates;
 
     // 배송 이력 한 건을 초기화한다.
-    DeliveryHistory(ParcelStatus beforeParcelStatus, ParcelStatus afterParcelStatus, LocalDateTime changedAt) {
+    DeliveryHistory(ParcelStatus beforeParcelStatus,
+                    ParcelStatus afterParcelStatus,
+                    LocalDateTime historyChangedDates) {
         this.beforeParcelStatus = beforeParcelStatus;
         this.afterParcelStatus = afterParcelStatus;
-        this.changedAt = changedAt;
+        this.historyChangedDates = historyChangedDates;
     }
-
-    // 변경 전 상태를 반환한다.
-    ParcelStatus getBeforeParcelStatus() {
-        return beforeParcelStatus;
-    }
-
-    // 변경 후 상태를 반환한다.
-    ParcelStatus getAfterParcelStatus() {
-        return afterParcelStatus;
-    }
-
-    // 변경 시각을 반환한다.
-    LocalDateTime getChangedAt() {
-        return changedAt;
-    }
-
 }

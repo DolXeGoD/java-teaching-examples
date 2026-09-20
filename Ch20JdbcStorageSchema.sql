@@ -14,8 +14,8 @@ CREATE TABLE IF NOT EXISTS parcels (
     delivery_type VARCHAR(20) NOT NULL,
     fee INT NOT NULL,
     status VARCHAR(20) NOT NULL,
-    registered_at DATE NOT NULL,
-    expected_delivery_at DATE NOT NULL
+    registered_at DATETIME NOT NULL,
+    expected_delivery_at DATETIME NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS delivery_histories (

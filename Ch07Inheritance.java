@@ -1,23 +1,17 @@
 import java.util.Scanner;
 
-
 enum DeliveryType {
     일반,
     특급,
     냉장,
     해외
 }
-
-
 enum ParcelStatus {
     접수,
     출고,
     취소,
     없음
 }
-
-
-
 
 public class Ch07Inheritance {
     static Scanner scanner = new Scanner(System.in);
