@@ -333,54 +333,67 @@ class JdbcParcelRepository implements ParcelRepository {
         this.connection = connection;
     }
 
-    // ========== CH20 변경 ==========
-    // PreparedStatement로 택배 행과 배송 이력 행을 저장하고, 하나의 트랜잭션으로 처리한다.
-    // =================================
-    // 택배와 해당 택배의 배송 이력을 하나의 작업으로 저장한다.
+    // 새로운 택배는 INSERT하고, 기존 택배는 UPDATE한다.
+    @Override
     public void save(Parcel parcel) throws SQLException {
-        String parcelSql = "INSERT INTO parcels "
-                + "(tracking_number, receiver_name, receiver_phone_number, destination, weight, "
-                + "delivery_type, fee, status, registered_at, expected_delivery_at) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
-                + "ON DUPLICATE KEY UPDATE receiver_name = VALUES(receiver_name), "
-                + "receiver_phone_number = VALUES(receiver_phone_number), destination = VALUES(destination), "
-                + "weight = VALUES(weight), delivery_type = VALUES(delivery_type), fee = VALUES(fee), "
-                + "status = VALUES(status), registered_at = VALUES(registered_at), "
-                + "expected_delivery_at = VALUES(expected_delivery_at)";
+        Parcel savedParcel = findByTrackingNumber(parcel.getTrackingNumber());
 
-        boolean previousAutoCommit = connection.getAutoCommit();
-        connection.setAutoCommit(false);
+        if (savedParcel == null) {
+            insertParcel(parcel);
+        } else {
+            updateParcel(parcel);
+        }
 
-        try {
-            try (PreparedStatement parcelStatement = connection.prepareStatement(parcelSql)) {
-                parcelStatement.setString(1, parcel.getTrackingNumber());
-                parcelStatement.setString(2, parcel.getReceiverName());
-                parcelStatement.setString(3, parcel.getReceiverPhoneNumber());
-                parcelStatement.setString(4, parcel.getDestination());
-                parcelStatement.setInt(5, parcel.getWeight());
-                parcelStatement.setString(6, parcel.getDeliveryType().toString());
-                parcelStatement.setInt(7, parcel.getFee());
-                parcelStatement.setString(8, parcel.getParcelStatus().toString());
-                parcelStatement.setTimestamp(9, Timestamp.valueOf(parcel.getRegisteredDate()));
-                parcelStatement.setTimestamp(10, Timestamp.valueOf(parcel.getExpectedDeliveryDate()));
-                parcelStatement.executeUpdate();
-            }
+        insertLatestHistory(parcel);
+    }
 
-            deleteHistories(parcel.getTrackingNumber());
-            insertHistories(parcel);
-            connection.commit();
-        } catch (SQLException exception) {
-            connection.rollback();
-            throw exception;
-        } finally {
-            connection.setAutoCommit(previousAutoCommit);
+    // 새로운 택배를 DB에 추가한다.
+    private void insertParcel(Parcel parcel) throws SQLException {
+        String sql = "INSERT INTO parcels "
+                + "(tracking_number, receiver_name, receiver_phone_number, destination, "
+                + "weight, delivery_type, fee, status, registered_at, expected_delivery_at) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, parcel.getTrackingNumber());
+            statement.setString(2, parcel.getReceiverName());
+            statement.setString(3, parcel.getReceiverPhoneNumber());
+            statement.setString(4, parcel.getDestination());
+            statement.setInt(5, parcel.getWeight());
+            statement.setString(6, parcel.getDeliveryType().toString());
+            statement.setInt(7, parcel.getFee());
+            statement.setString(8, parcel.getParcelStatus().toString());
+            statement.setTimestamp(9, Timestamp.valueOf(parcel.getRegisteredDate()));
+            statement.setTimestamp(10, Timestamp.valueOf(parcel.getExpectedDeliveryDate()));
+            statement.executeUpdate();
+        }
+    }
+
+    // 기존 택배의 변경된 정보를 DB에 반영한다.
+    private void updateParcel(Parcel parcel) throws SQLException {
+        String sql = "UPDATE parcels SET "
+                + "receiver_name = ?, receiver_phone_number = ?, destination = ?, "
+                + "weight = ?, delivery_type = ?, fee = ?, status = ?, "
+                + "registered_at = ?, expected_delivery_at = ? "
+                + "WHERE tracking_number = ?";
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, parcel.getReceiverName());
+            statement.setString(2, parcel.getReceiverPhoneNumber());
+            statement.setString(3, parcel.getDestination());
+            statement.setInt(4, parcel.getWeight());
+            statement.setString(5, parcel.getDeliveryType().toString());
+            statement.setInt(6, parcel.getFee());
+            statement.setString(7, parcel.getParcelStatus().toString());
+            statement.setTimestamp(8, Timestamp.valueOf(parcel.getRegisteredDate()));
+            statement.setTimestamp(9, Timestamp.valueOf(parcel.getExpectedDeliveryDate()));
+            statement.setString(10, parcel.getTrackingNumber());
+            statement.executeUpdate();
         }
     }
 
     // 운송장 번호에 해당하는 택배와 배송 이력을 조회한다.
-    // ========== CH20 변경 ==========
-    // DB 행을 Parcel 객체로 만들고, 별도 조회한 배송 이력까지 연결한다.
-    // =================================
+    @Override
     public Parcel findByTrackingNumber(String trackingNumber) throws SQLException {
         String sql = "SELECT * FROM parcels WHERE tracking_number = ?";
 
@@ -400,51 +413,47 @@ class JdbcParcelRepository implements ParcelRepository {
     }
 
     // DB의 모든 택배를 조회한다.
+    @Override
     public List<Parcel> findAll() throws SQLException {
         List<Parcel> parcels = new ArrayList<>();
         String sql = "SELECT * FROM parcels ORDER BY registered_at";
 
-        try (PreparedStatement statement = connection.prepareStatement(sql);
-             ResultSet resultSet = statement.executeQuery()) {
-            while (resultSet.next()) {
-                Parcel parcel = createParcel(resultSet);
-                loadHistories(parcel);
-                parcels.add(parcel);
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    Parcel parcel = createParcel(resultSet);
+                    parcels.add(parcel);
+                }
             }
         }
 
         return parcels;
     }
 
+    // 전체 택배 목록이 비었는지 확인한다.
+    @Override
     public boolean isEmpty() throws SQLException {
         return findAll().isEmpty();
     }
 
-    // 기존 배송 이력을 지운다.
-    private void deleteHistories(String trackingNumber) throws SQLException {
-        String sql = "DELETE FROM delivery_histories WHERE tracking_number = ?";
-
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, trackingNumber);
-            statement.executeUpdate();
+    // 가장 최근에 추가된 배송 이력 한 건을 DB에 추가한다.
+    private void insertLatestHistory(Parcel parcel) throws SQLException {
+        if (parcel.getHistoryCount() == 0) {
+            return;
         }
-    }
 
-    // 택배 객체 안의 배송 이력을 DB에 저장한다.
-    private void insertHistories(Parcel parcel) throws SQLException {
         String sql = "INSERT INTO delivery_histories "
                 + "(tracking_number, before_status, after_status, changed_at) VALUES (?, ?, ?, ?)";
 
+        int latestHistoryIndex = parcel.getHistoryCount() - 1;
+        DeliveryHistory latestHistory = parcel.getHistories()[latestHistoryIndex];
+
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            for (int i = 0; i < parcel.getHistoryCount(); i++) {
-                DeliveryHistory history = parcel.getHistories()[i];
-                statement.setString(1, parcel.getTrackingNumber());
-                statement.setString(2, history.beforeParcelStatus.toString());
-                statement.setString(3, history.afterParcelStatus.toString());
-                statement.setTimestamp(4, Timestamp.valueOf(history.historyChangedDates));
-                statement.addBatch();
-            }
-            statement.executeBatch();
+            statement.setString(1, parcel.getTrackingNumber());
+            statement.setString(2, latestHistory.beforeParcelStatus.toString());
+            statement.setString(3, latestHistory.afterParcelStatus.toString());
+            statement.setTimestamp(4, Timestamp.valueOf(latestHistory.historyChangedDates));
+            statement.executeUpdate();
         }
     }
 
